@@ -22,6 +22,7 @@ setup(name='plone.formwidget.multifile',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
+        'z3c.form',
         'setuptools',
         'plone.z3cform',
         'plone.namedfile',
