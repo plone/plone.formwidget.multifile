@@ -24,6 +24,8 @@ setup(name='plone.formwidget.multifile',
       install_requires=[
         'setuptools',
         'plone.z3cform',
+        'plone.namedfile',
+        'plone.app.drafts',
         # -*- Extra requirements: -*-
         ],
       entry_points="""
