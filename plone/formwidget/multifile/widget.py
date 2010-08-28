@@ -68,6 +68,9 @@ class MultiFileWidget(MultiWidget):
         self.update()
         return self.input_template(self)
 
+    def editing(self):
+        return self.mode == 'input'
+
     def get_value(self):
         """
         """

@@ -21,7 +21,8 @@
   <div class="multi-file">
 
     <div tal:attributes="id view/get_uploader_id;
-                         ref view/name"></div>
+                         ref view/name"
+         tal:omit-tag="not:view/editing"></div>
 
     <ul class="multi-file-files">
       <li tal:repeat="item view/get_value" class="multi-file-file">
@@ -36,8 +37,10 @@
         <span class="discreet" tal:condition="item/size|nothing">
           &mdash;
           <tal:size replace="item/size" /> KB
-          &mdash;
-          <a href="" class="multi-file-remove-file">remove</a>
+          <tal:editing tal:condition="view/editing">
+            &mdash;
+            <a href="" class="multi-file-remove-file">remove</a>
+          </tal:editing>
         </span>
         <input type="hidden"
                tal:attributes="name string:${view/name}:list;
