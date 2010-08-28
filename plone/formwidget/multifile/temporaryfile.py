@@ -62,6 +62,7 @@ class TemporaryFileHandler(object):
     def remove(self, key):
         """Removes a temporary file object form the storage and returns it.
         """
+        raise NotImplemented
 
     def _get_draft_storage(self):
         """Returns the draft storage.

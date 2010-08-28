@@ -1,4 +1,5 @@
 from Products.Five.browser import BrowserView
+from Acquisition import aq_inner, aq_parent
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.interfaces import ITemporaryFileHandler
 from plone.formwidget.multifile.utils import get_icon_for
@@ -8,6 +9,7 @@ from z3c.form.widget import FieldWidget
 from z3c.form.widget import MultiWidget, Widget
 from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.browser.interfaces import IBrowserView
 from zope.component import getMultiAdapter
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse
@@ -65,6 +67,10 @@ class MultiFileWidget(MultiWidget):
 
     input_template = ViewPageTemplateFile('input.pt')
 
+    @property
+    def better_context(self):
+        return self.form.context
+
     def render(self):
         self.update()
         return self.input_template(self)
@@ -103,7 +109,7 @@ class MultiFileWidget(MultiWidget):
                         )
 
                 yield {'value': key,
-                       'icon': get_icon_for(self.context, file_),
+                       'icon': get_icon_for(self.better_context, file_),
                        'filename': file_.filename,
                        'size': round(file_.getSize() / 1024.0),
                        'download_url': download_url}
@@ -121,7 +127,7 @@ class MultiFileWidget(MultiWidget):
             name=self.get_uploader_id(),
             cookie=encode(self.request.cookies.get(
                     '__ac', '')),
-            physical_path="/".join(self.context.getPhysicalPath()),
+            physical_path="/".join(self.better_context.getPhysicalPath()),
             )
 
     def get_uploader_id(self):
@@ -137,7 +143,7 @@ class MultiFileWidget(MultiWidget):
         return Widget.extract(self, *args, **kwargs)
 
     def publishTraverse(self, request, name):
-        widget = self.widgets[int(name)].__of__(self.context)
+        widget = self.widgets[int(name)].__of__(self.better_context)
         # fix some stuff, according to z3c.form.field.FieldWidgets.update
         widget.name = self.name + '.' + name
         widget.__name__ = name
@@ -184,7 +190,13 @@ class UploadFileToSessionView(BrowserView):
 
     def __call__(self):
         file_ = self.request.form['Filedata']
-        handler = getMultiAdapter((self.context, self.request),
+        # in some cases the context is the view, so lets walk up
+        # and search the real context
+        context = self.context
+        while IBrowserView.providedBy(context):
+            context = aq_parent(aq_inner(context))
+
+        handler = getMultiAdapter((context, self.request),
                                   ITemporaryFileHandler)
         file_ = NamedFile(file_, filename=file_.filename.decode('utf-8'))
         draft = handler.create(file_)

@@ -31,7 +31,7 @@ class MultiFileConverter(BaseDataConverter):
         if original_value and getattr(self.widget, '_converted', False):
             return original_value
 
-        context = self.widget.context
+        context = self.widget.form.context
         request = context.REQUEST
         handler = getMultiAdapter((context, request),
                                   ITemporaryFileHandler)

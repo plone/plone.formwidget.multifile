@@ -1,5 +1,5 @@
 
-<tal:WIDGET tal:define="portal_url view/portal/absolute_url">
+<tal:WIDGET tal:define="portal_url view/better_context/portal_url">
 
   <script src="jquery.uploadify.js"
           type="text/javascript"
@@ -28,7 +28,7 @@
       <li tal:repeat="item view/get_value" class="multi-file-file">
         <img tal:condition="icon" src="" alt=""
              tal:define="icon item/icon"
-             tal:attributes="src string:${context/portal_url}/$icon"/>
+             tal:attributes="src string:${view/better_context/portal_url}/$icon"/>
         <a tal:omit-tag="not:item/download_url"
            tal:attributes="href item/download_url">
           <span tal:condition="item/filename|nothing"
