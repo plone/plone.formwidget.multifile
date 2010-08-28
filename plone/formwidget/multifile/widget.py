@@ -10,6 +10,7 @@ from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getMultiAdapter
 from zope.interface import implements, implementer
+from zope.publisher.interfaces import IPublishTraverse
 
 
 def encode(s):
@@ -58,7 +59,7 @@ INLINE_JAVASCRIPT = """
 """
 
 class MultiFileWidget(MultiWidget):
-    implements(IMultiFileWidget)
+    implements(IMultiFileWidget, IPublishTraverse)
 
     klass = u'multi-file-widget'
 
@@ -92,15 +93,14 @@ class MultiFileWidget(MultiWidget):
                 else:
                     key = 'index:%i' % i
                     file_ = key_or_file
-                    widget = self.widgets[i]
-                    widget_name = widget.name
-                    download_url = '%s/++widget++%s/@@download/%s' % (
+                    view_name = self.name[len(self.form.prefix):]
+                    view_name = view_name[len(self.form.widgets.prefix):]
+                    download_url = '%s/++widget++%s/%i/@@download/%s' % (
                         self.request.getURL(),
-                        widget_name,
+                        view_name,
+                        i,
                         file_.filename
                         )
-                    # XXX not working yet
-                    download_url = None
 
                 yield {'value': key,
                        'icon': get_icon_for(self.context, file_),
@@ -136,6 +136,30 @@ class MultiFileWidget(MultiWidget):
         """
         return Widget.extract(self, *args, **kwargs)
 
+    def publishTraverse(self, request, name):
+        widget = self.widgets[int(name)].__of__(self.context)
+        # fix some stuff, according to z3c.form.field.FieldWidgets.update
+        widget.name = self.name + '.' + name
+        widget.__name__ = name
+        widget.id = self.name.replace('.', '-')
+        widget.form = self.form
+        widget.ignoreContext = self.ignoreContext
+        widget.ignoreRequest = self.ignoreRequest
+        widget.mode = self.mode
+        widget.update()
+        widget.field.__name__ = name
+
+        # we need to be able to do something like
+        # getattr(widget.context, widget.field.__name__)
+        # and it should return the value
+
+        class objectish_list(list):
+            def __getattr__(self, k):
+                return self[int(k)]
+
+        widget.context = objectish_list(self.value)
+
+        return widget
 
 
 @implementer(IFieldWidget)
