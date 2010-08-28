@@ -24,15 +24,16 @@
                          ref view/name"></div>
 
     <ul class="multi-file-files">
-      <li tal:repeat="file view/value">
-        <span tal:content="file/filename" />
-        &mdash;
-        <span class="discreet">
-          <tal:size replace="python:round(file.getSize() / 1024)" /> KB
+      <li tal:repeat="file view/get_value">
+        <span tal:condition="file/filename|nothing"
+              tal:content="file/filename" />
+        <span class="discreet" tal:condition="file/size|nothing">
+          &mdash;
+          <tal:size replace="file/size" /> KB
         </span>
         <input type="hidden"
                tal:attributes="name string:${view/name}:list;
-                               value string:index${repeat/file/index}" />
+                               value file/value" />
       </li>
     </ul>
   </div>

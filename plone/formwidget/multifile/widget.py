@@ -2,7 +2,7 @@ from Products.Five.browser import BrowserView
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.interfaces import ITemporaryFileHandler
 from plone.namedfile import NamedFile
-from z3c.form.interfaces import IFieldWidget
+from z3c.form.interfaces import IFieldWidget, IDataConverter, IDataManager
 from z3c.form.widget import FieldWidget
 from z3c.form.widget import Widget
 from zope.app.component.hooks import getSite
@@ -64,7 +64,21 @@ class MultiFileWidget(Widget):
     input_template = ViewPageTemplateFile('input.pt')
 
     def render(self):
+        self.update()
         return self.input_template(self)
+
+    def get_value(self):
+        """
+        """
+        if self.value:
+            for i, file_ in enumerate(self.value):
+                if isinstance(file_, unicode):
+                    yield {'value': file_}
+                else:
+                    yield {'value': 'index:%i' % i,
+                           'filename': file_.filename,
+                           'size': round(file_.getSize() / 1024.0)}
+
 
     def update(self):
         super(MultiFileWidget, self).update()
@@ -80,6 +94,9 @@ class MultiFileWidget(Widget):
                     '__ac', '')),
             physical_path="/".join(self.context.getPhysicalPath()),
             )
+
+    def extract(self, *a, **kw):
+        return Widget.extract(self, *a, **kw)
 
     def get_uploader_id(self):
         """Returns the id attribute for the uploader div. This should
