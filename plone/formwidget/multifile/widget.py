@@ -4,7 +4,7 @@ from plone.formwidget.multifile.interfaces import ITemporaryFileHandler
 from plone.namedfile import NamedFile
 from z3c.form.interfaces import IFieldWidget, IDataConverter, IDataManager
 from z3c.form.widget import FieldWidget
-from z3c.form.widget import Widget
+from z3c.form.widget import MultiWidget
 from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getMultiAdapter
@@ -56,7 +56,7 @@ INLINE_JAVASCRIPT = """
     });
 """
 
-class MultiFileWidget(Widget):
+class MultiFileWidget(MultiWidget):
     implements(IMultiFileWidget)
 
     klass = u'multi-file-widget'
@@ -71,13 +71,37 @@ class MultiFileWidget(Widget):
         """
         """
         if self.value:
-            for i, file_ in enumerate(self.value):
-                if isinstance(file_, unicode):
-                    yield {'value': file_}
+            # sometimes the value contains the strings from the form,
+            # sometimes it's already converted by the converter. But
+            # if we have errors and we are trying to add a new file
+            # (thats when entry is a unicode string) we need to put
+            # that string again in the form since we did not store the
+            # file yet, but we can get the file from the converter..
+            converter = IDataConverter(self)
+            converted_value = converter.toFieldValue(self.value)
+            for i, key_or_file in enumerate(self.value):
+                if isinstance(key_or_file, unicode):
+                    key = key_or_file
+                    file_ = converted_value[i]
+                    download_url = None
+                    
                 else:
-                    yield {'value': 'index:%i' % i,
-                           'filename': file_.filename,
-                           'size': round(file_.getSize() / 1024.0)}
+                    key = 'index:%i' % i
+                    file_ = key_or_file
+                    widget = self.widgets[i]
+                    widget_name = widget.name
+                    download_url = '%s/++widget++%s/@@download/%s' % (
+                        self.request.getURL(),
+                        widget_name,
+                        file_.filename
+                        )
+                    # XXX not working yet
+                    download_url = None
+                    
+                yield {'value': key,
+                       'filename': file_.filename,
+                       'size': round(file_.getSize() / 1024.0),
+                       'download_url': download_url}
 
 
     def update(self):
@@ -94,9 +118,6 @@ class MultiFileWidget(Widget):
                     '__ac', '')),
             physical_path="/".join(self.context.getPhysicalPath()),
             )
-
-    def extract(self, *a, **kw):
-        return Widget.extract(self, *a, **kw)
 
     def get_uploader_id(self):
         """Returns the id attribute for the uploader div. This should

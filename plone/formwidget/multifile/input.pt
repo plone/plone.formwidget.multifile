@@ -25,8 +25,11 @@
 
     <ul class="multi-file-files">
       <li tal:repeat="file view/get_value">
-        <span tal:condition="file/filename|nothing"
-              tal:content="file/filename" />
+        <a tal:omit-tag="not:file/download_url"
+           tal:attributes="href file/download_url">
+          <span tal:condition="file/filename|nothing"
+                tal:content="file/filename" />
+        </a>
         <span class="discreet" tal:condition="file/size|nothing">
           &mdash;
           <tal:size replace="file/size" /> KB
