@@ -24,19 +24,22 @@
                          ref view/name"></div>
 
     <ul class="multi-file-files">
-      <li tal:repeat="file view/get_value">
-        <a tal:omit-tag="not:file/download_url"
-           tal:attributes="href file/download_url">
-          <span tal:condition="file/filename|nothing"
-                tal:content="file/filename" />
+      <li tal:repeat="item view/get_value">
+        <img tal:condition="icon" src="" alt=""
+             tal:define="icon item/icon"
+             tal:attributes="src string:${context/portal_url}/$icon"/>
+        <a tal:omit-tag="not:item/download_url"
+           tal:attributes="href item/download_url">
+          <span tal:condition="item/filename|nothing"
+                tal:content="item/filename" />
         </a>
-        <span class="discreet" tal:condition="file/size|nothing">
+        <span class="discreet" tal:condition="item/size|nothing">
           &mdash;
-          <tal:size replace="file/size" /> KB
+          <tal:size replace="item/size" /> KB
         </span>
         <input type="hidden"
                tal:attributes="name string:${view/name}:list;
-                               value file/value" />
+                               value item/value" />
       </li>
     </ul>
   </div>
