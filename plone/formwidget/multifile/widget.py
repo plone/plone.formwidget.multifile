@@ -6,7 +6,7 @@ from zope.publisher.interfaces import NotFound
 from Products.CMFCore.utils import getToolByName
 from z3c.form.interfaces import IFieldWidget, IDataConverter
 from z3c.form.widget import FieldWidget
-from z3c.form.widget import MultiWidget
+from z3c.form.widget import MultiWidget, Widget
 from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getMultiAdapter
@@ -143,6 +143,12 @@ class MultiFileWidget(MultiWidget):
         be uniqe, also when using multiple widgets on the same page.
         """
         return 'multi-file-%s' % self.name.replace('.', '-')
+
+    def extract(self, *args, **kwargs):
+        """Use the extrat method of the default Widget since the
+        MultiWidget expects sub-widgets.
+        """
+        return Widget.extract(self, *args, **kwargs)
 
 
 
