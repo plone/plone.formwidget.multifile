@@ -22,5 +22,5 @@ class MultiFileWidget(Widget):
 
 
 @implementer(IFieldWidget)
-def QueryStringFieldWidget(field, request):
+def MultiFileFieldWidget(field, request):
     return FieldWidget(field, MultiFileWidget(request))
