@@ -100,7 +100,7 @@ class MultiFileWidget(MultiWidget):
                     download_url = None
 
                 yield {'value': key,
-                       'icon': get_icon_for(file_),
+                       'icon': get_icon_for(self.context, file_),
                        'filename': file_.filename,
                        'size': round(file_.getSize() / 1024.0),
                        'download_url': download_url}
