@@ -11,7 +11,7 @@
   </script>
   <script src="multifile.js"
           type="text/javascript"
-          tal:attributes="src string:$portal_url/++resource++multifile.js?x8">
+          tal:attributes="src string:$portal_url/++resource++multifile.js?xx4">
   </script>
   <link href="uploadify.css"
         rel="stylesheet"
@@ -24,7 +24,7 @@
                          ref view/name"></div>
 
     <ul class="multi-file-files">
-      <li tal:repeat="item view/get_value">
+      <li tal:repeat="item view/get_value" class="multi-file-file">
         <img tal:condition="icon" src="" alt=""
              tal:define="icon item/icon"
              tal:attributes="src string:${context/portal_url}/$icon"/>
@@ -36,6 +36,8 @@
         <span class="discreet" tal:condition="item/size|nothing">
           &mdash;
           <tal:size replace="item/size" /> KB
+          &mdash;
+          <a href="" class="multi-file-remove-file">remove</a>
         </span>
         <input type="hidden"
                tal:attributes="name string:${view/name}:list;

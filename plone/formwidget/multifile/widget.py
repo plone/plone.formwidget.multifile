@@ -1,9 +1,8 @@
 from Products.Five.browser import BrowserView
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.interfaces import ITemporaryFileHandler
+from plone.formwidget.multifile.utils import get_icon_for
 from plone.namedfile import NamedFile
-from zope.publisher.interfaces import NotFound
-from Products.CMFCore.utils import getToolByName
 from z3c.form.interfaces import IFieldWidget, IDataConverter
 from z3c.form.widget import FieldWidget
 from z3c.form.widget import MultiWidget, Widget
@@ -101,26 +100,10 @@ class MultiFileWidget(MultiWidget):
                     download_url = None
 
                 yield {'value': key,
-                       'icon': self.get_icon_for(file_),
+                       'icon': get_icon_for(file_),
                        'filename': file_.filename,
                        'size': round(file_.getSize() / 1024.0),
                        'download_url': download_url}
-
-    def get_icon_for(self, file_):
-        """Returns the best icon for the `file_`
-        """
-        mtr = getToolByName(self.context, 'mimetypes_registry', None)
-        if mtr is None:
-            return self.context.getIcon()
-        lookup = mtr.lookup(file_.contentType)
-        if lookup:
-            mti = lookup[0]
-            try:
-                self.context.restrictedTraverse(mti.icon_path)
-                return mti.icon_path
-            except (NotFound, KeyError, AttributeError):
-                pass
-        return self.context.getIcon()
 
 
     def update(self):

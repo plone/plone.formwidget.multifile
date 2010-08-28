@@ -28,6 +28,9 @@ class MultiFileConverter(BaseDataConverter):
         except TypeError:
             original_value = []
 
+        if original_value and getattr(self.widget, '_converted', False):
+            return original_value
+
         context = self.widget.context
         request = context.REQUEST
         handler = getMultiAdapter((context, request),
@@ -43,5 +46,7 @@ class MultiFileConverter(BaseDataConverter):
                 new_value.append(original_value[index])
             else:
                 new_value.append(subvalue)
+
+        self.widget._converted = True
 
         return new_value
