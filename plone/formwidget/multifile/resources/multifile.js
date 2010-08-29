@@ -1,5 +1,4 @@
 function multifile_uploadify_response(event, ID, fileObj, response, data) {
-  console.info(event, ID, fileObj, response, data);
   var fieldname = jq(event.target).attr('ref');
   var html = '<span>' + fileObj.name + '</span> &mdash; ' +
     '<span class="discreet">' + Math.round(fileObj.size / 1024) +
