@@ -24,7 +24,7 @@ Using the widget is quiet easy::
     >>> from zope import schema
     >>> from zope.interface import Interface
     >>> 
-    >>> class MySchema(Interface):
+    >>> class IMySchema(Interface):
     ...     """My schema interface"""
     ...     
     ...     directivesform.widget(files=MultiFileFieldWidget)
