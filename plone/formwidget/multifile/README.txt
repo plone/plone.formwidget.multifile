@@ -44,5 +44,4 @@ We also need to register the templates for the widgets:
     ...     IPageTemplate, name=interfaces.INPUT_MODE)
 
     >>> widget.update()
-    >>> print widget.render()
 
