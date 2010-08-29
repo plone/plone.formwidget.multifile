@@ -66,6 +66,8 @@ class MultiFileWidget(MultiWidget):
     klass = u'multi-file-widget'
 
     input_template = ViewPageTemplateFile('input.pt')
+    display_template = ViewPageTemplateFile('display.pt')
+    file_template = ViewPageTemplateFile('file_template.pt')
 
     @property
     def better_context(self):
@@ -73,12 +75,15 @@ class MultiFileWidget(MultiWidget):
 
     def render(self):
         self.update()
-        return self.input_template(self)
+        if self.mode == 'input':
+            return self.input_template(self)
+        else:
+            return self.display_template(self)
 
     def editing(self):
         return self.mode == 'input'
 
-    def get_value(self):
+    def get_data(self):
         """
         """
         if self.value:
@@ -92,27 +97,43 @@ class MultiFileWidget(MultiWidget):
             converted_value = converter.toFieldValue(self.value)
             for i, key_or_file in enumerate(self.value):
                 if isinstance(key_or_file, unicode):
-                    key = key_or_file
                     file_ = converted_value[i]
-                    download_url = None
+                    yield self.render_file(file_, value=key_or_file)
 
                 else:
-                    key = 'index:%i' % i
-                    file_ = key_or_file
-                    view_name = self.name[len(self.form.prefix):]
-                    view_name = view_name[len(self.form.widgets.prefix):]
-                    download_url = '%s/++widget++%s/%i/@@download/%s' % (
-                        self.request.getURL(),
-                        view_name,
-                        i,
-                        file_.filename
-                        )
+                    yield self.render_file(key_or_file, index=i)
 
-                yield {'value': key,
-                       'icon': get_icon_for(self.better_context, file_),
-                       'filename': file_.filename,
-                       'size': round(file_.getSize() / 1024.0),
-                       'download_url': download_url}
+    def render_file(self, file_, value=None, index=None, context=None):
+        """Renders the <li> for one file.
+        """
+        if context == None:
+            context = self.better_context
+
+        if value == None and index == None:
+            raise ValueError('Either value or index expected')
+
+        if value == None:
+            value = 'index:%i' % index
+            view_name = self.name[len(self.form.prefix):]
+            view_name = view_name[len(self.form.widgets.prefix):]
+            download_url = '%s/++widget++%s/%i/@@download/%s' % (
+                self.request.getURL(),
+                view_name,
+                index,
+                file_.filename
+                )
+
+        options = {'value': value,
+                   'icon': '/'.join((context.portal_url(),
+                                     get_icon_for(context, file_))),
+                   'filename': file_.filename,
+                   'size': int(round(file_.getSize() / 1024)),
+                   'download_url': download_url,
+                   'widget': self,
+                   'editable': self.mode == 'input',
+                   }
+
+        return self.file_template(**options)
 
 
     def update(self):
@@ -192,6 +213,7 @@ class UploadFileToSessionView(BrowserView):
         file_ = self.request.form['Filedata']
         # in some cases the context is the view, so lets walk up
         # and search the real context
+
         context = self.context
         while IBrowserView.providedBy(context):
             context = aq_parent(aq_inner(context))

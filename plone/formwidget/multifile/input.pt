@@ -25,27 +25,8 @@
          tal:omit-tag="not:view/editing"></div>
 
     <ul class="multi-file-files">
-      <li tal:repeat="item view/get_value" class="multi-file-file">
-        <img tal:condition="icon" src="" alt=""
-             tal:define="icon item/icon"
-             tal:attributes="src string:${view/better_context/portal_url}/$icon"/>
-        <a tal:omit-tag="not:item/download_url"
-           tal:attributes="href item/download_url">
-          <span tal:condition="item/filename|nothing"
-                tal:content="item/filename" />
-        </a>
-        <span class="discreet" tal:condition="item/size|nothing">
-          &mdash;
-          <tal:size replace="item/size" /> KB
-          <tal:editing tal:condition="view/editing">
-            &mdash;
-            <a href="" class="multi-file-remove-file">remove</a>
-          </tal:editing>
-        </span>
-        <input type="hidden"
-               tal:attributes="name string:${view/name}:list;
-                               value item/value" />
-      </li>
+      <li tal:repeat="html view/get_data"
+          tal:replace="structure html" />
     </ul>
   </div>
 
