@@ -19,7 +19,7 @@ Usage
 Using the widget is quiet easy::
 
     >>> from plone.directives import form as directivesform
-    >>> from plone.formwidget.multifile.widget import MultiFileFieldWidget
+    >>> from plone.formwidget.multifile import MultiFileFieldWidget
     >>> from plone.namedfile.field import NamedFile
     >>> from zope import schema
     >>> from zope.interface import Interface

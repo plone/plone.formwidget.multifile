@@ -3,6 +3,10 @@ import os
 
 version = '1.0a1'
 
+tests_require = [
+    'zope.app.testing',
+    ]
+
 setup(name='plone.formwidget.multifile',
       version=version,
       description="z3c.form widget for adding multiple files",
@@ -30,6 +34,8 @@ setup(name='plone.formwidget.multifile',
         'plone.app.drafts',
         # -*- Extra requirements: -*-
         ],
+      tests_require=tests_require,
+      extras_require=dict(tests=tests_require),
       entry_points="""
       # -*- Entry points: -*-
       [z3c.autoinclude.plugin]
