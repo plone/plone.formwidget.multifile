@@ -11,7 +11,7 @@
   </script>
   <script src="multifile.js"
           type="text/javascript"
-          tal:attributes="src string:$portal_url/++resource++multifile.js?xx4">
+          tal:attributes="src string:$portal_url/++resource++multifile.js">
   </script>
   <link href="uploadify.css"
         rel="stylesheet"
