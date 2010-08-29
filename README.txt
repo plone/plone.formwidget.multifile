@@ -30,3 +30,11 @@ Using the widget is quiet easy::
     ...     directivesform.widget(files=MultiFileFieldWidget)
     ...     files = schema.List(title=u'Files',
     ...                         value_type=NamedFile())
+
+
+Limitations
+-----------
+
+Since the flash plugin submits the files it's not possible to use it with
+HTTP basic authentication. Currently the widget passes the __ac cookie to
+the flash plugin for authentication.
