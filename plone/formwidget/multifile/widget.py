@@ -306,7 +306,14 @@ class UploadFileToSessionView(BrowserView):
                 context = aq_parent(aq_inner(context))
 
             # Get form so it will automatically save data on draft
-            form = context.context.restrictedTraverse(formname)
+            ######################################################
+            # BUG <--- FIX!!
+            ######################################################
+            # FOR plone 3
+            #form = context.context.restrictedTraverse(formname)
+            # FOR plone 4
+            form = context.restrictedTraverse(formname)
+
             form = form.form_instance
 
             ####################################################################
