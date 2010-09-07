@@ -28,6 +28,7 @@
       <li tal:repeat="html view/get_data"
           tal:replace="structure html" />
     </ul>
+    <input type="hidden" tal:replace="structure view/counterMarker" />
   </div>
 
   <!-- uploadify javascript -->

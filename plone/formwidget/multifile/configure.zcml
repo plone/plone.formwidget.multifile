@@ -9,7 +9,8 @@
   <!-- Include our dependencies -->
   <includeDependencies package="." />
 
-  <adapter factory=".converter.MultiFileConverter" />
+  <!-- USE DEFAULT ONE -->
+  <!--adapter factory=".converter.MultiFileConverter" /-->
 
   <zope:view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -36,9 +37,6 @@
       for="*"
       permission="zope.Public"
       />
-
-  <!-- temporary file handler adapter -->
-  <adapter factory=".temporaryfile.TemporaryFileHandler" />
 
   <!-- RESOURCES -->
   <browser:resource

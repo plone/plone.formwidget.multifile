@@ -8,7 +8,10 @@ def get_icon_for(context, file_):
     mtr = getToolByName(context, 'mimetypes_registry', None)
     if mtr is None:
         return context.getIcon()
-    lookup = mtr.lookup(file_.contentType)
+    if file_.contentType == '':
+        lookup = None
+    else:
+        lookup = mtr.lookup(file_.contentType)
     if lookup:
         mti = lookup[0]
         try:
