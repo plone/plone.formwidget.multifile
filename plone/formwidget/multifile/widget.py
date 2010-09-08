@@ -10,8 +10,10 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.browser.interfaces import IBrowserView
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse
+from zope.component import queryMultiAdapter
 
 from z3c.form import interfaces
+
 
 
 def encode(s):
@@ -305,15 +307,8 @@ class UploadFileToSessionView(BrowserView):
             while IBrowserView.providedBy(context):
                 context = aq_parent(aq_inner(context))
 
-            # Get form so it will automatically save data on draft
-            ######################################################
-            # BUG <--- FIX!!
-            ######################################################
-            # FOR plone 3
-            #form = context.context.restrictedTraverse(formname)
-            # FOR plone 4
+            # FOR plone 4 (may work with Plone 3 now)
             form = context.restrictedTraverse(formname)
-
             form = form.form_instance
 
             ####################################################################
@@ -321,9 +316,23 @@ class UploadFileToSessionView(BrowserView):
             # type does not have draft behavior enabled
             ####################################################################
 
-            # form.update() will force all current draft data to be loaded on to
+
+
+            # - update() will force all current draft data to be loaded on to
             # the request.form so we can gain access it to it
-            form.update()
+            # - We also make sure to set autoEnableDraftBehavior to Ture which
+            # will automatically enable the draft behavior for the content type
+            # if it was not already enabled otherwise we would not have access
+            # to the draft
+            # XXX: get rid of depend on plone.app.dexterity; patch z3cform
+            # if I can't find a better hook than update()
+            from plone.app.dexterity.behaviors.drafts import IDraftBehavior
+            draftBehavior = queryMultiAdapter((form, form.request), IDraftBehavior)
+            if draftBehavior is None:
+                return json.dumps(ERROR)
+            draftBehavior.update(autoEnableDraftBehavior=True)
+
+            #form.update()
 
             # NOTE:
             # ------------------------------------------------------------------
