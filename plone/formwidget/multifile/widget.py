@@ -365,6 +365,9 @@ class UploadFileToSessionView(BrowserView):
             # update form again (will save file_ on draft)
             form.update()
 
+            # Update widget so we will have access to the latest file
+            widget.update()
+
             for subwidget in widget.widgets:
                 if subwidget.name == subwidgetName:
                     response = {"filename" : subwidget.filename,
