@@ -326,11 +326,11 @@ class UploadFileToSessionView(BrowserView):
             # to the draft
             # XXX: get rid of depend on plone.app.dexterity; patch z3cform
             # if I can't find a better hook than update()
-            from plone.app.dexterity.behaviors.drafts import IDraftBehavior
-            draftBehavior = queryMultiAdapter((form, form.request), IDraftBehavior)
+            from plone.app.z3cformdrafts.interfaces import IZ3cFormDraft
+            draftBehavior = queryMultiAdapter((form, form.request), IZ3cFormDraft)
             if draftBehavior is None:
                 return json.dumps(ERROR)
-            draftBehavior.update(autoEnableDraftBehavior=True)
+            draftBehavior.update( portal_type=context.portal_type, autoEnableDraftBehavior=True)
 
             #form.update()
 
