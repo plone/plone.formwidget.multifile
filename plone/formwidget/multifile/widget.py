@@ -309,7 +309,7 @@ class UploadFileToSessionView(BrowserView):
 
             # FOR plone 4 (may work with Plone 3 now)
             form = context.restrictedTraverse(formname)
-            form = form.form_instance
+            form = getattr(form, 'form_instance', form)
 
             ####################################################################
             # TODO; make sure we add IDraftIgnoreAllBehaviors... incase content
@@ -327,10 +327,10 @@ class UploadFileToSessionView(BrowserView):
             # XXX: get rid of depend on plone.app.dexterity; patch z3cform
             # if I can't find a better hook than update()
             from plone.app.z3cformdrafts.interfaces import IZ3cFormDraft
-            draftBehavior = queryMultiAdapter((form, form.request), IZ3cFormDraft)
+            draftBehavior = queryMultiAdapter((form, self.request), IZ3cFormDraft)
             if draftBehavior is None:
                 return json.dumps(ERROR)
-            draftBehavior.update( portal_type=context.portal_type, autoEnableDraftBehavior=True)
+            draftBehavior.update( portal_type=form.portal_type, autoEnableDraftBehavior=True)
 
             #form.update()
 
