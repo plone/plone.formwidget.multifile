@@ -60,6 +60,7 @@ INLINE_JAVASCRIPT = """
     });
 """
 
+
 class MultiFileWidget(MultiWidget):
     implements(IMultiFileWidget, IPublishTraverse)
 
@@ -120,7 +121,7 @@ class MultiFileWidget(MultiWidget):
                 self.request.getURL(),
                 view_name,
                 index,
-                file_.filename
+                file_.filename,
                 )
 
         options = {'value': value,
@@ -134,7 +135,6 @@ class MultiFileWidget(MultiWidget):
                    }
 
         return self.file_template(**options)
-
 
     def update(self):
         super(MultiFileWidget, self).update()

@@ -41,7 +41,8 @@ class MultiFileConverter(BaseDataConverter):
             if isinstance(subvalue, unicode) and subvalue.startswith('new:'):
                 temporary_file_key = subvalue.split(':')[1]
                 new_value.append(handler.get(temporary_file_key))
-            elif isinstance(subvalue, unicode) and subvalue.startswith('index:'):
+            elif isinstance(subvalue, unicode) and \
+                 subvalue.startswith('index:'):
                 index = int(subvalue.split(':')[1])
                 new_value.append(original_value[index])
             else:

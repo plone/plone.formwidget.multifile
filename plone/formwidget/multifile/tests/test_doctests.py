@@ -9,5 +9,6 @@ def test_suite():
         zope.testing.doctest.DocFileSuite('../README.txt',
             setUp=zope.app.testing.placelesssetup.setUp,
             tearDown=zope.app.testing.placelesssetup.tearDown,
-            optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS,),
+            optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
+            ),
         ))

@@ -5,5 +5,4 @@ from plone.formwidget.multifile.widget import MultiFileFieldWidget
 MultiFileFieldWidget
 
 
-MessageFactory = zope.i18nmessageid.MessageFactory(
-    'plone.formwidget.multifile')
+MessageFactory = zope.i18nmessageid.MessageFactory('plone')
