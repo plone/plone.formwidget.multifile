@@ -9,9 +9,6 @@
   <!-- Include our dependencies -->
   <includeDependencies package="." />
 
-  <!-- USE DEFAULT ONE -->
-  <!--adapter factory=".converter.MultiFileConverter" /-->
-
   <zope:view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for=".interfaces.IMultiFileWidget"
@@ -29,15 +26,6 @@
   <!--         /> -->
 
   <!-- register some resources -->
-
-  <!-- upload to session view -->
-  <browser:view
-      name="multi-file-upload-file"
-      class=".widget.UploadFileToSessionView"
-      for="*"
-      permission="zope.Public"
-      />
-
   <!-- RESOURCES -->
   <browser:resource
       name="multifile.js"

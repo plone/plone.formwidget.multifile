@@ -13,7 +13,8 @@ from zope.publisher.interfaces import IPublishTraverse
 from zope.component import queryMultiAdapter
 
 from z3c.form import interfaces
-
+from z3c.form.i18n import MessageFactory as _
+from operator import attrgetter
 
 
 def encode(s):
@@ -29,6 +30,10 @@ def decode(s):
 
     return "".join(map(chr, map(int, s.split("d"))))
 
+#
+#            'script'        : '%(action_url)s',
+#            'script'        : '@@multi-file-upload-file',
+#
 INLINE_JAVASCRIPT = """
     jq(document).ready(function() {
         function escapeExpression(str) {
@@ -52,8 +57,8 @@ INLINE_JAVASCRIPT = """
 
         jq('#%(name)s').uploadify({
             'uploader'      : '++resource++uploadify.swf',
-            'script'        : '@@multi-file-upload-file',
-            'fileDataName'  : 'multifile.file',
+            'script'        : '%(action_url)s',
+            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
             'cancelImg'     : '++resource++cancel.png',
             'height'        : '30',
             'width'         : '110',
@@ -64,9 +69,7 @@ INLINE_JAVASCRIPT = """
                 var count = parseInt(e.getAttribute('value'));
                 e.setAttribute('value', count+1);
                 var filename = 'form.widgets.%(field_name)s.'+(count);
-                scriptData = {'cookie': '%(cookie)s',
-                              'multifile.formname' : '%(formname)s',
-                              'multifile.fieldname': '%(field_name)s',
+                scriptData = {'__ac': '%(ac)s',
                              }
                 jq('#%(name)s').uploadifySettings( 'scriptData', scriptData, true );
             },
@@ -80,8 +83,8 @@ INLINE_JAVASCRIPT = """
                     function() {
                         jq(this).append(jq(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
 
-                        var e = document.getElementById('form-widgets-%(field_name)s-count');
-                        e.setAttribute('value', obj.counter);
+                        //var e = document.getElementById('form-widgets-%(field_name)s-count');
+                        //e.setAttribute('value', obj.counter);
 
                     });
                 },
@@ -103,7 +106,10 @@ INLINE_JAVASCRIPT = """
 
 #from Acquisition import Explicit
 #class MultiFileWidget(Explicit, MultiWidget):
-class MultiFileWidget(MultiWidget):
+#class MultiFileWidget(MultiWidget):
+import z3c.form.browser.multi
+from z3c.form import button
+class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     implements(IMultiFileWidget, IPublishTraverse)
 
     klass = u'multi-file-widget'
@@ -204,10 +210,12 @@ class MultiFileWidget(MultiWidget):
             name=self.get_uploader_id(),
             cookie=encode(self.request.cookies.get(
                     '__ac', '')),
+            ac=url_quote(self.request.get('__ac', '')),
             physical_path="/".join(self.better_context.getPhysicalPath()),
             field_name=fieldName,
             formname=url_quote(self.request.getURL().split('/')[-1]),
             widget_url=url_quote(widgetURL),
+            action_url=url_quote(widgetURL),
             )
 
     def get_uploader_id(self):
@@ -261,28 +269,14 @@ class MultiFileWidget(MultiWidget):
 
         return widget
 
-
-@implementer(IFieldWidget)
-def MultiFileFieldWidget(field, request):
-    return FieldWidget(field, MultiFileWidget(request))
-
-
-class UploadFileToSessionView(BrowserView):
-    """The uploadify flash calls this view for every file added interactively.
-    This view saves the file in the session and returns the key where the file
-    can be found in the session. When the form is actually submitted the
-    widget gets the file from the session and stores it in the actual target.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        cookie = self.request.form.get("cookie")
-        if cookie:
-            self.request.cookies["__ac"] = decode(cookie)
-
-    def __call__(self):
+    @button.buttonAndHandler(_('Add'), name='add',
+                             condition=attrgetter('allowAdding'))
+    def handleAdd(self, action):
+        """The uploadify flash calls this view for every file added interactively.
+        This view saves the file in the session and returns the key where the file
+        can be found in the session. When the form is actually submitted the
+        widget gets the file from the session and stores it in the actual target.
+        """
         try:
             import json
         except:
@@ -291,95 +285,21 @@ class UploadFileToSessionView(BrowserView):
         SUCCESS = {"status": "success"}
         ERROR =   {"status": "error"}
 
-        try:
-            ####################################################################
-            # file_: FileUpload object
-            # formname: name of form (IE: ++add++content.type; edit)
-            # fieldname: name of content type attr field (IE: files)
-            ####################################################################
-            file_ = self.request.form.get('multifile.file')
-            formname = self.request.form.get('multifile.formname')
-            fieldname = self.request.form.get('multifile.fieldname')
+        # WORKS
+        newWidget = self.getWidget(len(self.value))
+        converter = IDataConverter(newWidget)
+        newWidget.value = converter.toFieldValue(action.extract())
+        self.value.append(newWidget.value)
+        self.updateWidgets()
 
-            # in some cases the context is the view, so lets walk up
-            # and search the real context
-            context = self.context
-            while IBrowserView.providedBy(context):
-                context = aq_parent(aq_inner(context))
+        response = {"filename" : newWidget.filename,
+                    "html"     : newWidget.render(),
+                    }
+        response.update(SUCCESS)
+        return json.dumps(response)
 
-            # FOR plone 4 (may work with Plone 3 now)
-            form = context.restrictedTraverse(formname)
-            form = getattr(form, 'form_instance', form)
+        #return json.dumps(ERROR)
 
-            ####################################################################
-            # TODO; make sure we add IDraftIgnoreAllBehaviors... incase content
-            # type does not have draft behavior enabled
-            ####################################################################
-
-
-
-            # - update() will force all current draft data to be loaded on to
-            # the request.form so we can gain access it to it
-            # - We also make sure to set autoEnableDraftBehavior to Ture which
-            # will automatically enable the draft behavior for the content type
-            # if it was not already enabled otherwise we would not have access
-            # to the draft
-            # XXX: get rid of depend on plone.app.dexterity; patch z3cform
-            # if I can't find a better hook than update()
-            from plone.app.z3cformdrafts.interfaces import IZ3cFormDraft
-            # TODO:  Create a convience adapter here
-            draftBehavior = queryMultiAdapter((form, self.request), IZ3cFormDraft)
-            if draftBehavior is None:
-                return json.dumps(ERROR)
-            portal_type = getattr(form, 'portal_type', form.context.portal_type)
-            draftBehavior.update(portal_type=portal_type, create=True)
-
-            #form.update()
-
-            # NOTE:
-            # ------------------------------------------------------------------
-            # You could not access draft directly to lookup or store aything
-            # like this: self.request.DRAFT.  Don't store things directly in
-            # _form though; let the drafts module take care of it automattically
-            # by just placeing whatever values on request.form and call
-            # form.update() again... it will store the draft properly (convert
-            # needed values, etc).
-
-            # Grab the widget for this fieldname
-            widget = form.widgets.get(fieldname)
-
-            # Get current list length, so we know where to add on to
-            counter = len(widget.value)
-
-            # Create a form.widgets.<field_name>.<index> name
-            subwidgetName = widget.name + '.%d' % counter
-
-            # Increase counter by 1 (will send back to browser so it can
-            # update widget.names.<field_name>.count
-            counter += 1
-
-            # Update request with new counter value; make sure its unicode!
-            self.request.form[widget.counterName] = unicode(counter)
-
-            # add file_ to request.form
-            self.request.form[subwidgetName] = file_
-
-            # update form again (will save file_ on draft)
-            #form.update()
-            draftBehavior.update(portal_type=portal_type, force=True)
-
-            # Update widget so we will have access to the latest file
-            widget.update()
-
-            for subwidget in widget.widgets:
-                if subwidget.name == subwidgetName:
-                    response = {"filename" : subwidget.filename,
-                                "counter"  : counter,
-                                "html"     : subwidget.render(),
-                                }
-                    response.update(SUCCESS)
-                    return json.dumps(response)
-        except TypeError:
-            pass
-
-        return json.dumps(ERROR)
+@implementer(IFieldWidget)
+def MultiFileFieldWidget(field, request):
+    return FieldWidget(field, MultiFileWidget(request))
