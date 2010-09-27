@@ -16,6 +16,7 @@ from z3c.form import interfaces
 from z3c.form.i18n import MessageFactory as _
 from operator import attrgetter
 
+import zope.component
 
 def encode(s):
     """ encode string
@@ -76,8 +77,15 @@ INLINE_JAVASCRIPT = """
             'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
                 var fieldname = jq(event.target).attr('ref');
 
+                //alert( responseJSON );
+
                 obj = parse_response(responseJSON);
+
+                //alert(obj.status);
+
                 if( obj.status == 'error' ) { return false; }
+
+                //alert(obj.html);
 
                 jq(event.target).siblings('.multi-file-files:first').each(
                     function() {
@@ -115,8 +123,11 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     klass = u'multi-file-widget'
 
     input_template = ViewPageTemplateFile('input.pt')
+    #input_template = ViewPageTemplateFile('file_input.pt')
     display_template = ViewPageTemplateFile('display.pt')
     file_template = ViewPageTemplateFile('file_template.pt')
+
+    json_response = None
 
     @property
     def counterMarker(self):
@@ -132,7 +143,10 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     def render(self):
         self.update()
         if self.mode == 'input':
-            return self.input_template(self)
+            if self.json_response is not None:
+                return self.json_response
+            else:
+                return self.input_template(self)
         else:
             return self.display_template(self)
 
@@ -143,44 +157,38 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         """
         """
         if self.value:
-            # sometimes the value contains the strings from the form,
-            # sometimes it's already converted by the converter. But
-            # if we have errors and we are trying to add a new file
-            # (thats when entry is a unicode string) we need to put
-            # that string again in the form since we did not store the
-            # file yet, but we can get the file from the converter..
             converter = IDataConverter(self)
             converted_value = converter.toFieldValue(self.value)
-            for i, key_or_file in enumerate(self.value):
-                # DEBUG:  just here for testing
-                if key_or_file is None:
-                    continue
-                if isinstance(key_or_file, unicode):
-                    file_ = converted_value[i]
-                    yield self.render_file(file_, value=key_or_file)
+            for i, file_ in enumerate(self.value):
+                yield self.render_file(file_, index=i)
 
-                else:
-                    yield self.render_file(key_or_file, index=i)
-
-    def render_file(self, file_, value=None, index=None, context=None):
+    #def render_file(self, file_, value=None, index=None, context=None):
+    def render_file(self, file_, index=None, context=None):
         """Renders the <li> for one file.
         """
         if context == None:
             context = self.better_context
 
-        if value == None and index == None:
+        #if value == None and index == None:
+        if index == None:
             raise ValueError('Either value or index expected')
 
-        if value == None:
-            value = 'index:%i' % index
-            view_name = self.name[len(self.form.prefix):]
-            view_name = view_name[len(self.form.widgets.prefix):]
-            download_url = '%s/++widget++%s/%i/@@download/%s' % (
-                self.request.getURL(),
-                view_name,
-                index,
-                file_.filename
-                )
+        #if value == None:
+        value = 'index:%i' % index
+        view_name = self.name[len(self.form.prefix):]
+        view_name = view_name[len(self.form.widgets.prefix):]
+        download_url = '%s/++widget++%s/%i/@@download/%s' % (
+            self.request.getURL(),
+            view_name,
+            index,
+            file_.filename
+            )
+        remove_url = '%s/++widget++%s/%i/@@download/%s' % (
+            self.request.getURL(),
+            view_name,
+            index,
+            file_.filename
+            )
 
         options = {'value': value,
                    'icon': '/'.join((context.portal_url(),
@@ -190,6 +198,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
                    'download_url': download_url,
                    'widget': self,
                    'editable': self.mode == 'input',
+                   'remove_url': remove_url,
                    }
 
         return self.file_template(**options)
@@ -224,26 +233,6 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         """
         return 'multi-file-%s' % self.name.replace('.', '-')
 
-    def extract(self, default=interfaces.NO_VALUE):
-        import re
-        count = 0
-        pattern = re.compile('%s.[\d]+$' % self.name)
-        for key in self.request.form:
-            if pattern.match(key):
-                count += 1
-
-        values = []
-        append = values.append
-
-        # extract value for existing widgets
-        for idx in range(count):
-            widget = self.getWidget(idx)
-            append(widget.value)
-        if len(values) == 0:
-            # no multi value found
-            return interfaces.NO_VALUE
-        return values
-
     def publishTraverse(self, request, name):
         widget = self.widgets[int(name)].__of__(self.better_context)
         # fix some stuff, according to z3c.form.field.FieldWidgets.update
@@ -269,6 +258,33 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
 
         return widget
 
+    def extract(self, default=interfaces.NO_VALUE):
+        # This method is responsible to get the widgets value based on the
+        # widget value only since items are never added via a form directly
+        # (tey are added one at a time via ajax).
+        if self.request.get(self.counterName) is None:
+            # counter marker not found
+            return interfaces.NO_VALUE
+        counter = int(self.request.get(self.counterName, 0))
+        values = []
+        append = values.append
+        # extract value for existing widgets
+        value = zope.component.getMultiAdapter( (self.context, self.field),
+                                                interfaces.IDataManager).query()
+        for idx in range(counter):
+            widget = self.getWidget(idx)
+            # Added for drafts code since its possible to have counter and no
+            # request.form value; especially if ajax validation is enabled
+            if (widget.value is None and widget.name not in self.request):
+                if not isinstance(value, list) or idx >= len(value):
+                    continue
+                widget.value = value[idx]
+            append(widget.value)
+        if len(values) == 0:
+            # no multi value found
+            return interfaces.NO_VALUE
+        return values
+
     @button.buttonAndHandler(_('Add'), name='add',
                              condition=attrgetter('allowAdding'))
     def handleAdd(self, action):
@@ -286,19 +302,23 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         ERROR =   {"status": "error"}
 
         # WORKS
-        newWidget = self.getWidget(len(self.value))
+        index = len(self.value)
+        newWidget = self.getWidget(index)
         converter = IDataConverter(newWidget)
         newWidget.value = converter.toFieldValue(action.extract())
         self.value.append(newWidget.value)
         self.updateWidgets()
 
         response = {"filename" : newWidget.filename,
-                    "html"     : newWidget.render(),
+                    "html"     : self.render_file(newWidget.value, index=index)
                     }
         response.update(SUCCESS)
-        return json.dumps(response)
+        self.json_response = json.dumps(response)
 
         #return json.dumps(ERROR)
+
+    def __call__(self):
+        return self.render()
 
 @implementer(IFieldWidget)
 def MultiFileFieldWidget(field, request):

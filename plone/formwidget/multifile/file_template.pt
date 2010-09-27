@@ -21,12 +21,15 @@
       <span class="discreet">
         &mdash;
         <a href="" class="multi-file-remove-file"
-           i18n:translate="link_remove_file">remove</a>
+           i18n:translate="link_remove_file">remove me</a>
+        <!--a tal:attributes="href options/remove_url"
+           class="multi-file-remove-file"
+           i18n:translate="link_remove_file">remove me</a-->
       </span>
 
-      <input type="hidden"
+      <!--input type="hidden"
              tal:attributes="name string:${options/widget/name}:list;
-                             value options/value" />
+                             value options/value" /-->
     </tal:EDITABLE>
 
   </li>
