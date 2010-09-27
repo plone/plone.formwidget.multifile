@@ -327,10 +327,12 @@ class UploadFileToSessionView(BrowserView):
             # XXX: get rid of depend on plone.app.dexterity; patch z3cform
             # if I can't find a better hook than update()
             from plone.app.z3cformdrafts.interfaces import IZ3cFormDraft
+            # TODO:  Create a convience adapter here
             draftBehavior = queryMultiAdapter((form, self.request), IZ3cFormDraft)
             if draftBehavior is None:
                 return json.dumps(ERROR)
-            draftBehavior.update( portal_type=form.portal_type, autoEnableDraftBehavior=True)
+            portal_type = getattr(form, 'portal_type', form.context.portal_type)
+            draftBehavior.update(portal_type=portal_type, create=True)
 
             #form.update()
 
@@ -363,7 +365,8 @@ class UploadFileToSessionView(BrowserView):
             self.request.form[subwidgetName] = file_
 
             # update form again (will save file_ on draft)
-            form.update()
+            #form.update()
+            draftBehavior.update(portal_type=portal_type, force=True)
 
             # Update widget so we will have access to the latest file
             widget.update()
