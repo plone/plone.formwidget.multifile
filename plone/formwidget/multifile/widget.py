@@ -57,10 +57,10 @@ INLINE_JAVASCRIPT = """
         }
 
         jq('#%(name)s').uploadify({
-            'uploader'      : '++resource++uploadify.swf',
+            'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
             'script'        : '%(action_url)s',
             'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
-            'cancelImg'     : '++resource++cancel.png',
+            'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
             'height'        : '30',
             'width'         : '110',
             'folder'        : '%(physical_path)s',
@@ -135,14 +135,14 @@ FLASH_UPLOAD_JS = """
     }
 
     clearQueue_%(ul_id)s = function() {
-        alert('clearQueue');
+        //alert('clearQueue');
         jQuery('#%(name)s').uploadifyClearQueue();
     }
 
     addUploadifyFields_%(ul_id)s = function(event, data ) {
-        alert('addUploadifyFields');
+        //alert('addUploadifyFields');
         if (fillTitles && !autoUpload)  {
-            alert('fillTtiles && !autoUpload');
+            //alert('fillTtiles && !autoUpload');
             var labelfiletitle = jQuery('#uploadify_label_file_title').val();
             jQuery('#%(name)sQueue .uploadifyQueueItem').each(function() {
                 ID = jQuery(this).attr('id').replace('%(ul_id)s','');
@@ -165,15 +165,15 @@ FLASH_UPLOAD_JS = """
             });
         }
         if (!autoUpload) {
-            alert('!autoUpload');
+            //alert('!autoUpload');
             return showButtons_%(ul_id)s();
         }
-        alert('ok');
+        //alert('ok');
         return 'ok';
     }
 
     showButtons_%(ul_id)s = function() {
-        alert('showButtons');
+        //alert('showButtons');
         if (jQuery('#%(name)sQueue .uploadifyQueueItem').length) {
             jQuery('.uploadifybuttons').show();
             return 'ok';
@@ -182,7 +182,7 @@ FLASH_UPLOAD_JS = """
     }
 
     sendDataAndUpload_%(ul_id)s = function() {
-        alert('sendDataAndUpload');
+        //alert('sendDataAndUpload');
         QueueItems = jQuery('#%(name)sQueue .uploadifyQueueItem');
         nbItems = QueueItems.length;
         QueueItems.each(function(i){
@@ -198,10 +198,10 @@ FLASH_UPLOAD_JS = """
 
     jQuery(document).ready(function() {
         jQuery('#%(name)s').uploadify({
-            'uploader'      : '++resource++uploadify.swf',
+            'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
             'script'        : '%(action_url)s',
             'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
-            'cancelImg'     : '++resource++cancel.png',
+            'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
             'folder'        : '%(physical_path)s',
             'auto'          : autoUpload,
             'multi'         : true,
@@ -221,8 +221,8 @@ FLASH_UPLOAD_JS = """
                 jq(event.target).siblings('.multi-file-files:first').each(
                     function() {
                         jq(this).append(jq(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
-                        //var e = document.getElementById('form-widgets-%(field_name)s-count');
-                        //e.setAttribute('value', obj.counter);
+                        var e = document.getElementById('form-widgets-%(field_name)s-count');
+                        e.setAttribute('value', obj.counter);
                     });
                 }
         });
@@ -381,7 +381,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             ul_id                  = self.get_uploader_function_id(),
             name                   = self.get_uploader_id(),
             ul_fill_titles         = 'true',  #self.qup_prefs.fill_titles and 'true' or 'false',
-            ul_auto_upload         = 'true',  #self.qup_prefs.auto_upload and 'true' or 'false',
+            ul_auto_upload         = 'false',  #self.qup_prefs.auto_upload and 'true' or 'false',
             ul_size_limit          = '',  #self.qup_prefs.size_limit and str(self.qup_prefs.size_limit*1024) or '',
             ul_xhr_size_limit      = '0',  #self.qup_prefs.size_limit and str(self.qup_prefs.size_limit*1024) or '0',
             ul_sim_upload_limit    = '0',  #str(self.qup_prefs.sim_upload_limit),
@@ -514,7 +514,8 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         self.updateWidgets()
 
         response = {"filename" : newWidget.filename,
-                    "html"     : self.render_file(newWidget.value, index=index)
+                    "html"     : self.render_file(newWidget.value, index=index),
+                    "counter"  : len(self.widgets)
                     }
         response.update(SUCCESS)
         self.json_response = json.dumps(response)
