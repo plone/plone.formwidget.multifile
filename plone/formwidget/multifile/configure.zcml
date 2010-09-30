@@ -17,6 +17,54 @@
       permission="zope.Public"
       />
 
+  <!-- Quick upload file Views
+       we use permission zope.Public
+       on flash_upload_file
+       because authentication is done
+       using a ticket -->
+
+  <browser:page
+      for=".interfaces.IMultiFileWidget"
+      name="multifile_upload_file"
+      attribute="multifile_upload_file"
+      class=".widget.UploadFile"
+      permission="cmf.AddPortalContent"/>
+
+  <browser:page
+      for=".interfaces.IMultiFileWidget"
+      name="multifile_flash_upload_file"
+      attribute="multifile_flash_upload_file"
+      class=".widget.UploadFile"
+      permission="zope.Public"/>
+
+  <!-- Quick Upload check file -->
+
+  <browser:page
+      for=".interfaces.IMultiFileWidget"
+      name="multifile_check_file"
+      class=".widget.CheckFile"
+      permission="cmf.AddPortalContent"/>
+
+  <!-- ticket view which generate a ticket for each user/folder absolute url
+       used only when no user cookie is available (not standard authentification) -->
+  <!--browser:page
+      for=".interfaces.IQuickUploadCapable"
+      name="quickupload_ticket"
+      class=".ticket.TicketView"
+      permission="cmf.AddPortalContent"
+      /-->
+
+  <!-- quick upload control panel adapter -->
+  <adapter factory=".quickupload_settings.QuickUploadControlPanelAdapter" />
+
+  <!-- quick upload control panel form view -->
+  <!--browser:page
+      name="quickupload-controlpanel"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      class=".quickupload_settings.QuickUploadControlPanel"
+      permission="cmf.ManagePortal"
+  /-->
+
 
   <!-- register some resources -->
   <!-- RESOURCES -->

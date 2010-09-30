@@ -18,15 +18,7 @@
         type="text/css"
         tal:attributes="href string:$portal_url/++resource++uploadify.css" /-->
 
-
-
-
   <!--div class="multi-file">
-
-    <div tal:attributes="id view/get_uploader_id;
-                         ref view/name"
-         tal:omit-tag="not:view/editing"></div>
-
     <ul class="multi-file-files">
       <li tal:repeat="html view/get_data"
           tal:replace="structure html" />
@@ -50,24 +42,38 @@
         Files Quick Upload
       </h4-->
 
-    <!-- list files -->
-    <div tal:attributes="id view/get_uploader_id;
-                         ref view/name"
-         tal:omit-tag="not:view/editing"></div>
+      <!-- label -->
+      <!--label i18n:translate="label_choose_your_files"
+             id="label-upload">Choose your files : </label-->
 
-    <ul class="multi-file-files">
-      <li tal:repeat="html view/get_data"
-          tal:replace="structure html" />
-    </ul>
+      <div class="multi-file">
+        <ul tal:attributes="id view/get_file_list_id"
+            class="multi-file-files">
+          <li tal:repeat="html view/get_data"
+              tal:replace="structure html" />
+        </ul>
+        <input type="hidden" tal:replace="structure view/counterMarker" />
+      </div>
 
-    <input type="hidden" tal:replace="structure view/counterMarker" />
+      <!-- Upload button and drag/drop zone -->
+      <div tal:attributes="id view/get_uploader_id;
+                          ref view/name"
+           tal:omit-tag="not:view/editing"
+           class="main-uploader">
 
-      <label i18n:translate="label_choose_your_files"
-             id="label-upload">Choose your files : </label>
+           <div class="qq-uploader">
+           <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>
+           <div class="qq-upload-button">Browse for a file</div>
+           <ul class="qq-upload-list"></ul>
+           </div>
+
+           </div>
+
       <!-- uploader comes here -->
-      <div id="uploader"
+      <!--div id="uploader"
            class="main-uploader"
-           tal:attributes="id uploader_id"></div>
+           tal:attributes="id uploader_id"></div-->
+
       <!-- upload button -->
       <input type="hidden"
              id="uploadify_label_file_title"

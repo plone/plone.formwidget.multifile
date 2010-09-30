@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<object name="portal_javascripts" meta_type="JavaScripts Registry">
+ <javascript cacheable="False" compression="safe" conditionalcomment=""
+    cookable="True" enabled="on" expression=""
+    id="++resource++plone.formwidget.multifile/swfobject.js" inline="False"/>
+ <javascript cacheable="False" compression="safe" conditionalcomment=""
+    cookable="True" enabled="on" expression=""
+    id="++resource++plone.formwidget.multifile/jquery.uploadify.js" inline="False"/>
+ <javascript cacheable="False" compression="safe" conditionalcomment=""
+    cookable="True" enabled="on" expression=""
+    id="++resource++plone.formwidget.multifile/fileuploader.js" inline="False"/>
+ <javascript cacheable="False" compression="safe" conditionalcomment=""
+    cookable="True" enabled="on" expression=""
+    id="++resource++plone.formwidget.multifile/helpers.js" inline="False"/>
+</object>
