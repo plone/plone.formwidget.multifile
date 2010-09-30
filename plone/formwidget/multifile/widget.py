@@ -111,14 +111,134 @@ INLINE_JAVASCRIPT = """
     });
 """
 
+#            //'uploader'      : '%(portal_url)s/++resource++quickupload_static/uploader.swf',
+#            //'script'        : '%(context_url)s/@@flash_upload_file',
+#            //'cancelImg'     : '%(portal_url)s/++resource++quickupload_static/cancel.png',
+#            //'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'}
+FLASH_UPLOAD_JS = """
+    var fillTitles = %(ul_fill_titles)s;
+    var autoUpload = %(ul_auto_upload)s;
+
+    var parse_response = function(data){
+        if(typeof data == "string"){
+            try{//try to parse if it's not already done...
+                data = $.parseJSON(data);
+            }catch(e){
+                try{
+                    data = eval("(" + data + ")");
+                }catch(e){
+                    //do nothing
+                }
+            }
+        }
+        return data
+    }
+
+    clearQueue_%(ul_id)s = function() {
+        alert('clearQueue');
+        jQuery('#%(name)s').uploadifyClearQueue();
+    }
+
+    addUploadifyFields_%(ul_id)s = function(event, data ) {
+        alert('addUploadifyFields');
+        if (fillTitles && !autoUpload)  {
+            alert('fillTtiles && !autoUpload');
+            var labelfiletitle = jQuery('#uploadify_label_file_title').val();
+            jQuery('#%(name)sQueue .uploadifyQueueItem').each(function() {
+                ID = jQuery(this).attr('id').replace('%(ul_id)s','');
+                if (!jQuery('.uploadField' ,this).length) {
+                  jQuery('.cancel' ,this).after('\
+                      <div class="uploadField">\
+                          <label>' + labelfiletitle + ' : </label> \
+                          <input type="hidden" \
+                                 class="file_id_field" \
+                                 name="file_id" \
+                                 value ="'  + ID + '" /> \
+                          <input type="text" \
+                                 class="file_title_field" \
+                                 id="title_' + ID + '" \
+                                 name="title" \
+                                 value="" />\
+                      </div>\
+                  ');
+                }
+            });
+        }
+        if (!autoUpload) {
+            alert('!autoUpload');
+            return showButtons_%(ul_id)s();
+        }
+        alert('ok');
+        return 'ok';
+    }
+
+    showButtons_%(ul_id)s = function() {
+        alert('showButtons');
+        if (jQuery('#%(name)sQueue .uploadifyQueueItem').length) {
+            jQuery('.uploadifybuttons').show();
+            return 'ok';
+        }
+        return false;
+    }
+
+    sendDataAndUpload_%(ul_id)s = function() {
+        alert('sendDataAndUpload');
+        QueueItems = jQuery('#%(name)sQueue .uploadifyQueueItem');
+        nbItems = QueueItems.length;
+        QueueItems.each(function(i){
+            filesData = {};
+            ID = jQuery('.file_id_field',this).val();
+            if (fillTitles && !autoUpload) {
+                filesData['title'] = jQuery('.file_title_field',this).val();
+            }
+            jQuery('#%(name)s').uploadifySettings('scriptData', filesData);
+            jQuery('#%(name)s').uploadifyUpload(ID);
+        })
+    }
+
+    jQuery(document).ready(function() {
+        jQuery('#%(name)s').uploadify({
+            'uploader'      : '++resource++uploadify.swf',
+            'script'        : '%(action_url)s',
+            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
+            'cancelImg'     : '++resource++cancel.png',
+            'folder'        : '%(physical_path)s',
+            'auto'          : autoUpload,
+            'multi'         : true,
+            'simUploadLimit': %(ul_sim_upload_limit)s,
+            'sizeLimit'     : '%(ul_size_limit)s',
+            'fileDesc'      : '%(ul_file_description)s',
+            'fileExt'       : '%(ul_file_extensions)s',
+            'buttonText'    : '%(ul_button_text)s',
+            'scriptAccess'  : 'sameDomain',
+            'hideButton'    : false,
+            'scriptData'    : {'__ac' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
+            'onSelectOnce'  : addUploadifyFields_%(ul_id)s,
+            'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
+                var fieldname = jq(event.target).attr('ref');
+                obj = parse_response(responseJSON);
+                if( obj.status == 'error' ) { return false; }
+                jq(event.target).siblings('.multi-file-files:first').each(
+                    function() {
+                        jq(this).append(jq(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
+                        //var e = document.getElementById('form-widgets-%(field_name)s-count');
+                        //e.setAttribute('value', obj.counter);
+                    });
+                }
+        });
+    });
+"""
+
 
 #from Acquisition import Explicit
 #class MultiFileWidget(Explicit, MultiWidget):
 #class MultiFileWidget(MultiWidget):
 import z3c.form.browser.multi
 from z3c.form import button
+from plone.app.drafts.interfaces import IDraftable
+from plone.dexterity.i18n import MessageFactory as _
 class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
-    implements(IMultiFileWidget, IPublishTraverse)
+    implements(IMultiFileWidget, IPublishTraverse, IDraftable)
 
     klass = u'multi-file-widget'
 
@@ -208,7 +328,10 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         self.portal = getSite()
 
     def get_inline_js(self):
-        return INLINE_JAVASCRIPT % self.get_settings()
+        #return INLINE_JAVASCRIPT % self.get_settings()
+
+        settings = self.upload_settings()
+        return FLASH_UPLOAD_JS % settings
 
     def get_settings(self):
         from Products.PythonScripts.standard import url_quote
@@ -216,22 +339,101 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         requestURL = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
         widgetURL = requestURL + '/++widget++' + fieldName
         return dict(
-            name=self.get_uploader_id(),
-            cookie=encode(self.request.cookies.get(
-                    '__ac', '')),
-            ac=url_quote(self.request.get('__ac', '')),
+            #name=self.get_uploader_id(),
+            #cookie=encode(self.request.cookies.get('__ac', '')),
+            #ac=url_quote(self.request.get('__ac', '')),
             physical_path="/".join(self.better_context.getPhysicalPath()),
-            field_name=fieldName,
-            formname=url_quote(self.request.getURL().split('/')[-1]),
-            widget_url=url_quote(widgetURL),
+            #field_name=fieldName,
+            #formname=url_quote(self.request.getURL().split('/')[-1]),
+            #widget_url=url_quote(widgetURL),
             action_url=url_quote(widgetURL),
+            ul_id=self.get_uploader_id(),
+            ticket='',
             )
+
+    def upload_settings(self):
+        from Products.PythonScripts.standard import url_quote
+        context = aq_inner(self.better_context)
+        request = self.request
+        session = request.get('SESSION', {})
+        #from Products.CMFCore.utils import getToolByName
+        #portal_url = getToolByName(context, 'portal_url')()
+        portal_url = self.portal.absolute_url()
+
+        # use a ticket for authentication (used for flashupload only)
+        #ticket = context.restrictedTraverse('@@quickupload_ticket')()
+        ticket = url_quote(self.request.get('__ac', ''))  #ticket,
+
+        # Added
+        fieldName = self.field.__name__
+        requestURL = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
+        widgetURL = requestURL + '/++widget++' + fieldName
+        action_url=url_quote(widgetURL)
+
+        settings = dict(
+            action_url             = action_url,
+            field_name             = self.field.__name__,
+            ticket                 = ticket,
+            portal_url             = portal_url,
+            typeupload             = '',
+            context_url            = context.absolute_url(),
+            physical_path          = "/".join(context.getPhysicalPath()),
+            ul_id                  = self.get_uploader_function_id(),
+            name                   = self.get_uploader_id(),
+            ul_fill_titles         = 'true',  #self.qup_prefs.fill_titles and 'true' or 'false',
+            ul_auto_upload         = 'true',  #self.qup_prefs.auto_upload and 'true' or 'false',
+            ul_size_limit          = '',  #self.qup_prefs.size_limit and str(self.qup_prefs.size_limit*1024) or '',
+            ul_xhr_size_limit      = '0',  #self.qup_prefs.size_limit and str(self.qup_prefs.size_limit*1024) or '0',
+            ul_sim_upload_limit    = '0',  #str(self.qup_prefs.sim_upload_limit),
+            ul_button_text         = _(u'Browse'),
+            ul_draganddrop_text    = _(u'Drag and drop files to upload'),
+            ul_msg_all_sucess      = _( u'All files uploaded with success.'),
+            ul_msg_some_sucess     = _( u' files uploaded with success, '),
+            ul_msg_some_errors     = _( u" uploads return an error."),
+            ul_msg_failed          = _( u"Failed"),
+            ul_error_try_again_wo  = _( u"please select files again without it."),
+            ul_error_try_again     = _( u"please try again."),
+            ul_error_empty_file    = _( u"This file is empty :"),
+            ul_error_file_large    = _( u"This file is too large :"),
+            ul_error_maxsize_is    = _( u"maximum file size is :"),
+            ul_error_bad_ext       = _( u"This file has invalid extension :"),
+            ul_error_onlyallowed   = _( u"Only allowed :"),
+            ul_error_no_permission = _( u"You don't have permission to add this content in this place."),
+            ul_error_always_exists = _( u"This file always exists with the same name on server :"),
+            ul_error_zodb_conflict = _( u"A data base conflict error happened when uploading this file :"),
+            ul_error_server        = _( u"Server error, please contact support and/or try again."),
+        )
+
+        mediaupload = session.get('mediaupload', request.get('mediaupload', ''))
+        typeupload = session.get('typeupload', request.get('typeupload', ''))
+        settings['typeupload'] = typeupload
+        #if mediaupload :
+        #    ul_content_types_infos = self.ul_content_types_infos(mediaupload)
+        #elif typeupload :
+        #    imageTypes = _listTypesForInterface(context, IImageContent)
+        #    if typeupload in imageTypes :
+        #        ul_content_types_infos = self.ul_content_types_infos('image')
+        #else :
+        #    ul_content_types_infos = ('*.*;', [], '')
+        ul_content_types_infos = ('*.*;', [], '')
+
+        settings['ul_file_extensions'] = ul_content_types_infos[0]
+        settings['ul_file_extensions_list'] = str(ul_content_types_infos[1])
+        settings['ul_file_description'] = ul_content_types_infos[2]
+
+        return settings
 
     def get_uploader_id(self):
         """Returns the id attribute for the uploader div. This should
         be uniqe, also when using multiple widgets on the same page.
         """
-        return 'multi-file-%s' % self.name.replace('.', '-')
+        #return 'multi-file-%s' % self.name.replace('.', '-')
+        return self.get_uploader_function_id()
+
+    def get_uploader_function_id(self):
+        """Returns a suitable id used to name javascript functions.
+        """
+        return 'multi_file_%s' % self.name.replace('.', '_')
 
     def publishTraverse(self, request, name):
         widget = self.widgets[int(name)].__of__(self.better_context)
@@ -306,6 +508,8 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         newWidget = self.getWidget(index)
         converter = IDataConverter(newWidget)
         newWidget.value = converter.toFieldValue(action.extract())
+
+        # Implement Title; duplicate checking; etc before commiting file
         self.value.append(newWidget.value)
         self.updateWidgets()
 
