@@ -39,7 +39,7 @@ def decode(s):
 #            'script'        : '@@multi-file-upload-file',
 #
 INLINE_JAVASCRIPT = """
-    jq(document).ready(function() {
+    jQuery(document).ready(function() {
         function escapeExpression(str) {
             return str.replace(/([#;&,\.\+\*\~':"\!\^$\[\]\(\)=>\|])/g, "\\$1");
         }
@@ -59,7 +59,7 @@ INLINE_JAVASCRIPT = """
             return data
         }
 
-        jq('#%(name)s').uploadify({
+        jQuery('#%(name)s').uploadify({
             'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
             'script'        : '%(action_url)s',
             'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
@@ -75,10 +75,10 @@ INLINE_JAVASCRIPT = """
                 var filename = 'form.widgets.%(field_name)s.'+(count);
                 scriptData = {'__ac': '%(ac)s',
                              }
-                jq('#%(name)s').uploadifySettings( 'scriptData', scriptData, true );
+                jQuery('#%(name)s').uploadifySettings( 'scriptData', scriptData, true );
             },
             'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
-                var fieldname = jq(event.target).attr('ref');
+                var fieldname = jQuery(event.target).attr('ref');
 
                 //alert( responseJSON );
 
@@ -90,9 +90,9 @@ INLINE_JAVASCRIPT = """
 
                 //alert(obj.html);
 
-                jq(event.target).siblings('.multi-file-files:first').each(
+                jQuery(event.target).siblings('.multi-file-files:first').each(
                     function() {
-                        jq(this).append(jq(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
+                        jQuery(this).append(jQuery(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
 
                         //var e = document.getElementById('form-widgets-%(field_name)s-count');
                         //e.setAttribute('value', obj.counter);
@@ -121,21 +121,6 @@ INLINE_JAVASCRIPT = """
 FLASH_UPLOAD_JS = """
     var fillTitles = %(ul_fill_titles)s;
     var autoUpload = %(ul_auto_upload)s;
-
-    var parse_response = function(data){
-        if(typeof data == "string"){
-            try{//try to parse if it's not already done...
-                data = $.parseJSON(data);
-            }catch(e){
-                try{
-                    data = eval("(" + data + ")");
-                }catch(e){
-                    //do nothing
-                }
-            }
-        }
-        return data
-    }
 
     clearQueue_%(ul_id)s = function() {
         //alert('clearQueue');
@@ -218,12 +203,12 @@ FLASH_UPLOAD_JS = """
             'scriptData'    : {'__ac' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
             'onSelectOnce'  : addUploadifyFields_%(ul_id)s,
             'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
-                var fieldname = jq(event.target).attr('ref');
-                obj = parse_response(responseJSON);
+                var fieldname = jQuery(event.target).attr('ref');
+                obj = jsonParse(responseJSON);
                 if( obj.status == 'error' ) { return false; }
-                jq(event.target).siblings('.multi-file-files:first').each(
+                jQuery(event.target).siblings('.multi-file-files:first').each(
                     function() {
-                        jq(this).append(jq(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
+                        jQuery(this).append(jQuery(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
                         var e = document.getElementById('form-widgets-%(field_name)s-count');
                         e.setAttribute('value', obj.counter);
                     });
@@ -261,16 +246,9 @@ XHR_UPLOAD_JS = """
 
             onAfterSelect: addUploadFields_%(ul_id)s,
             onComplete: function (id, filename, responseJSON) {
-                //var fieldname = jq(event.target).attr('ref');
-                //if( responseJSON.status == 'error' ) { return false; }
-
-                //jq(event.target).siblings('.multi-file-files:first').each(
-                //jq('#multi-file-files').siblings('.multi-file-files:first').each(
-                //    function() {
-                        jq('#%(file_list_id)s').append(jq(document.createElement('li')).html(responseJSON.html).attr('class', 'multi-file-file'));
-                        var e = document.getElementById('form-widgets-%(field_name)s-count');
-                        e.setAttribute('value', responseJSON.counter);
-                //    });
+                    jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(responseJSON.html).attr('class', 'multi-file-file'));
+                    var e = document.getElementById('form-widgets-%(field_name)s-count');
+                    e.setAttribute('value', responseJSON.counter);
                 var uploader = xhr_%(ul_id)s;
                 PloneQuickUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
             },
@@ -801,6 +779,8 @@ class UploadFile(BrowserView):
                 logger.info("Test file size : the file %s is too big, upload rejected" % file_name)
                 return json.dumps({u'error': u'sizeError'})
 
+        if not file_data:
+            return json.dumps({u'error': u'emptyError'})
 
         if not self._check_file_id(file_name) :
             logger.info("The file id for %s always exist, upload rejected" % file_name)
@@ -818,46 +798,47 @@ class UploadFile(BrowserView):
             ctr = getToolByName(context, 'content_type_registry')
             portal_type = ctr.findTypeName(file_name.lower(), '', '') or 'File'
 
-        #NamedFile(file_data, content_type, file_name)
-        if file_data:
-            #factory = IFileFactory(widget.context)
+        from ZPublisher.HTTPRequest import FileUpload
+        if file_data and not isinstance(file_data, FileUpload):
             logger.info("uploading file with %s : filename=%s, title=%s, content_type=%s, portal_type=%s" % \
                     (upload_with, file_name, title, content_type, portal_type))
-
             try :
-                #f = factory(file_name, title, content_type, file_data, portal_type)
-                from ZPublisher.HTTPRequest import FileUpload
                 aFieldStorage = FieldStorageStub(file, {}, file_name)
-                fileUpload = FileUpload(aFieldStorage)
-
-                index = len(widget.value)
-                newWidget = widget.getWidget(index)
-                converter = IDataConverter(newWidget)
-                newWidget.value = converter.toFieldValue(fileUpload)
-            except :
+                file_data = FileUpload(aFieldStorage)
+            except TypeError:
                 return json.dumps({u'error': u'serverError'})
 
-            if newWidget.value is not None:
-                widget.value.append(newWidget.value)
-                widget.updateWidgets()
-                # Save on draft
-                dm = zope.component.getMultiAdapter(
-                    (self.content, widget.field), interfaces.IDataManager)
-                dm.set(interfaces.IDataConverter(widget).toFieldValue(widget.value))
+        index = len(widget.value)
+        newWidget = widget.getWidget(index)
+        converter = IDataConverter(newWidget)
+        newWidget.value = converter.toFieldValue(file_data)
 
-                # TODO; need to create a url create function in widget
-                #logger.info("file url: %s" % newWidget.value.absolute_url())
-                responseJSON = {u'success'  : True,
-                                u'filename' : newWidget.filename,
-                                u'html'     : widget.render_file(newWidget.value, index=index),
-                                u'counter'  : len(widget.widgets),
-                            }
-            else :
-                responseJSON = {u'error': f['error']}
+        if newWidget.value is not None:
+            widget.value.append(newWidget.value)
+            widget.updateWidgets()
+            # Save on draft
+            dm = zope.component.getMultiAdapter(
+                (self.content, widget.field), interfaces.IDataManager)
+            dm.set(interfaces.IDataConverter(widget).toFieldValue(widget.value))
+
+            # TODO; need to create a url create function in widget
+            #logger.info("file url: %s" % newWidget.value.absolute_url())
+
+            # Reset requestURL so file URL will be rendered properly
+            request.URL = request.getURL()[0:(request.getURL().find('/', len(self.content.absolute_url())+1))]
+            responseJSON = {u'success'  : True,
+                            u'filename' : newWidget.filename,
+                            u'html'     : widget.render_file(newWidget.value, index=index),
+                            u'counter'  : len(widget.widgets),
+                        }
         else :
-            responseJSON = {u'error': u'emptyError'}
+            responseJSON = {u'error': f['error']}
 
-        return json.dumps(responseJSON)
+        # If iframe was used; wrap the response in a <script> tag or will get json parse errors
+        if not request.HTTP_X_REQUESTED_WITH:
+            return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
+        else:
+            return json.dumps(responseJSON)
 
 
     def _check_file_size(self, data):

@@ -67,6 +67,7 @@ PloneQuickUpload.clearQueue = function(uploader, domelement) {
     }
 }
 PloneQuickUpload.onUploadComplete = function(uploader, domelement, id, fileName, responseJSON) {
+    //responseJSON = jsonParse(responseJSON);
     var uploadList = jQuery('.qq-upload-list', domelement);
     if(responseJSON.success) {
         window.setTimeout( function() {
