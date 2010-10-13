@@ -21,6 +21,22 @@ import zope.component
 import logging
 logger = logging.getLogger('plone.formwidget.multifile')
 
+# ------------------------------------------------------------------------------
+# TODO
+# ------------------------------------------------------------------------------
+# - Cleanup!
+# - Option to store files in object or place in container; item will raise
+#   error if attempting to store in container
+# - HTML templates for image
+# - drag/drap to re-order
+# - get drag/drop working
+# - fix to work with deco (deco converts js <> to &lt; %gt; which is causing
+#   display issues
+# - Remove button function
+# - Get FLASH working again
+# ------------------------------------------------------------------------------
+
+
 def encode(s):
     """ encode string
     """
@@ -184,11 +200,13 @@ FLASH_UPLOAD_JS = """
         })
     }
 
+//            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
+//            'scriptData'    : {'__ac' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
     jQuery(document).ready(function() {
         jQuery('#%(name)s').uploadify({
             'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
             'script'        : '%(action_url)s',
-            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
+            'fileDataName'  : 'qqfile',
             'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
             'folder'        : '%(physical_path)s',
             'auto'          : autoUpload,
@@ -200,17 +218,26 @@ FLASH_UPLOAD_JS = """
             'buttonText'    : '%(button_text)s',
             'scriptAccess'  : 'sameDomain',
             'hideButton'    : false,
-            'scriptData'    : {'__ac' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
+            'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
             'onSelectOnce'  : addUploadifyFields_%(id)s,
             'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
                 var fieldname = jQuery(event.target).attr('ref');
-                obj = jsonParse(responseJSON);
-                if( obj.status == 'error' ) { return false; }
+
+                // XXX: Added for multifile, since returned HTML in response does not parse
+                // correctly when added directly to an iframe body
+                responseText = doc.getElementById('json-response') ? doc.getElementById('json-response').innerHTML : doc.body.innerHTML;
+                try{
+                    response = jQuery.parseJSON( responseText );
+                } catch(err){
+                    response = {};
+                }
+
+                if( response.status == 'error' ) { return false; }
                 jQuery(event.target).siblings('.multi-file-files:first').each(
                     function() {
-                        jQuery(this).append(jQuery(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
+                        jQuery(this).append(jQuery(document.createElement('li')).html(response.html).attr('class', 'multi-file-file'));
                         var e = document.getElementById('form-widgets-%(field_name)s-count');
-                        e.setAttribute('value', obj.counter);
+                        e.setAttribute('value', response.counter);
                     });
                 }
         });
@@ -397,8 +424,11 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         #return INLINE_JAVASCRIPT % self.get_settings()
 
         settings = self.upload_settings()
-        #return FLASH_UPLOAD_JS % settings
-        return XHR_UPLOAD_JS % settings
+
+        if self.field.use_flashupload:
+            return FLASH_UPLOAD_JS % settings
+        else:
+            return XHR_UPLOAD_JS % settings
 
     def get_settings(self):
         from Products.PythonScripts.standard import url_quote
@@ -469,14 +499,18 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
 
         # use a ticket for authentication (used for flashupload only)
         #ticket = context.restrictedTraverse('@@quickupload_ticket')()
-        ticket = url_quote(self.request.get('__ac', ''))  #ticket,
+        #ticket = url_quote(self.request.get('__ac', ''))  #ticket,
+        #ticket = self.request.get('__ac', '')  #ticket,
+        ticket = encode(self.request.cookies.get('__ac', ''))
 
         # Added
         fieldName = self.field.__name__
         requestURL = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
         widgetURL = requestURL + '/++widget++' + fieldName
-        #action: '%(context_url)s/@@multifile_upload_file',
-        action_url=url_quote(widgetURL + '/@@multifile_upload_file')
+        if self.field.use_flashupload:
+            action_url=url_quote(widgetURL + '/@@multifile_flash_upload_file')
+        else:
+            action_url=url_quote(widgetURL + '/@@multifile_upload_file')
 
         settings = dict(
             action_url              = action_url,
@@ -600,33 +634,34 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         can be found in the session. When the form is actually submitted the
         widget gets the file from the session and stores it in the actual target.
         """
-        try:
-            import json
-        except:
-            import simplejson as json
+##        try:
+##            import json
+##        except:
+##            import simplejson as json
+##
+##        SUCCESS = {"status": "success"}
+##        ERROR =   {"status": "error"}
+##
+##        # WORKS
+##        index = len(self.value)
+##        newWidget = self.getWidget(index)
+##        converter = IDataConverter(newWidget)
+##        newWidget.value = converter.toFieldValue(action.extract())
+##
+##        # Implement Title; duplicate checking; etc before commiting file
+##        self.value.append(newWidget.value)
+##        self.updateWidgets()
+##
+##        responseJSON = {"filename" : newWidget.filename,
+##                    "html"     : self.render_file(newWidget.value, index=index),
+##                    "counter"  : len(self.widgets)
+##                    }
+##        responseJSON.update(SUCCESS)
+##        self.responseJSON = json.dumps(responseJSON)
+##
+##        #return json.dumps(ERROR)
 
-        SUCCESS = {"status": "success"}
-        ERROR =   {"status": "error"}
-
-        # WORKS
-        index = len(self.value)
-        newWidget = self.getWidget(index)
-        converter = IDataConverter(newWidget)
-        newWidget.value = converter.toFieldValue(action.extract())
-
-        # Implement Title; duplicate checking; etc before commiting file
-        self.value.append(newWidget.value)
-        self.updateWidgets()
-
-        responseJSON = {"filename" : newWidget.filename,
-                    "html"     : self.render_file(newWidget.value, index=index),
-                    "counter"  : len(self.widgets)
-                    }
-        responseJSON.update(SUCCESS)
-        self.responseJSON = json.dumps(responseJSON)
-
-        #return json.dumps(ERROR)
-
+    # REMOVE once not needed anymore????
     def __call__(self):
         return self.render()
 
@@ -741,6 +776,7 @@ def decodeQueryString(QueryString):
 ##                      if interface.isImplementedByInstancesOf(tipe['klass'])]
 ##    return dict.fromkeys(all_types).keys()
 
+from ZPublisher.HTTPRequest import FileUpload
 
 class UploadFile(BrowserView):
     """The ajax XHR calls this view for every file added interactively.
@@ -758,22 +794,30 @@ class UploadFile(BrowserView):
         while IBrowserView.providedBy(context):
             context = aq_parent(aq_inner(context))
         self.widget = context
+
         self.content = aq_inner(self.widget.context)
 
+        # Need to validate user for flashupload, and get draft
+        if self.widget.field.use_flashupload:
+            self.request.set('__ac', decode(self.request.get('ticket')))
+            self.widget.form.update()
+            self.content = self.widget.form.widgets.content
+
     def __call__(self):
-        if self.field.use_flashupload:
-            return self.multifile_flash_upload_file()
-        else:
-            return self.multifile_upload_file()
+        #if self.widget.field.use_flashupload:
+        #    return self.multifile_flash_upload_file()
+        #else:
+        #    return self.multifile_upload_file()
+        return self.multifile_upload_file()
 
     def multifile_flash_upload_file(self):
-        pass
+        self.multifile_upload_file()
 
     def multifile_upload_file(self):
         widget = self.widget
 
         #-------------------------------------------------------------------
-        context = aq_inner(self.context)
+        #context = aq_inner(self.context)
         request = self.request
         response = request.RESPONSE
 
@@ -801,7 +845,12 @@ class UploadFile(BrowserView):
             except :
                 logger.info("Error when trying to read the file %s in request"  %file_name)
                 return json.dumps({u'error': u'serverError'})
-        else :
+
+            try :
+                file_data = FileUpload(aFieldStorage = FieldStorageStub(file, {}, file_name))
+            except TypeError:
+                return json.dumps({u'error': u'serverError'})
+        elif not self.widget.field.use_flashupload:
             # using classic form post method (MSIE<=8)
             file_data = request.get("qqfile", None)
             filename = getattr(file_data,'filename', '')
@@ -811,6 +860,17 @@ class UploadFile(BrowserView):
             if not self._check_file_size(file_data) :
                 logger.info("Test file size : the file %s is too big, upload rejected" % file_name)
                 return json.dumps({u'error': u'sizeError'})
+        else:
+            # using flash upload
+            file_data = request.get("qqfile", None)
+            filename = getattr(file_data,'filename', '')
+            file_name = filename.split("\\")[-1]
+            upload_with = "FLASH"
+            #TODO: Implement CheckFile view (flash will use it to comfirm first)
+            # we must test the file size in this case (no client test)
+            #if not self._check_file_size(file_data) :
+            #    logger.info("Test file size : the file %s is too big, upload rejected" % file_name)
+            #    return json.dumps({u'error': u'sizeError'})
 
         if not file_data:
             return json.dumps({u'error': u'emptyError'})
@@ -819,27 +879,7 @@ class UploadFile(BrowserView):
             logger.info("The file id for %s already exists, upload rejected" % file_name)
             return json.dumps({u'error': u'serverErrorAlreadyExists'})
 
-        content_type = mimetypes.guess_type(file_name)[0]
-        # sometimes plone mimetypes registry could be more powerful
-        if not content_type :
-            mtr = getToolByName(context, 'mimetypes_registry')
-            content_type = str(mtr.globFilename(file_name))
-        portal_type = request.get('typeupload', '')
-        title =  request.get('title', '')
-
-        if not portal_type :
-            ctr = getToolByName(context, 'content_type_registry')
-            portal_type = ctr.findTypeName(file_name.lower(), '', '') or 'File'
-
-        from ZPublisher.HTTPRequest import FileUpload
-        if file_data and not isinstance(file_data, FileUpload):
-            logger.info("uploading file with %s : filename=%s, title=%s, content_type=%s, portal_type=%s" % \
-                    (upload_with, file_name, title, content_type, portal_type))
-            try :
-                aFieldStorage = FieldStorageStub(file, {}, file_name)
-                file_data = FileUpload(aFieldStorage)
-            except TypeError:
-                return json.dumps({u'error': u'serverError'})
+        logger.info("uploading file with %s : filename=%s" % (upload_with, file_name))
 
         index = len(widget.value)
         newWidget = widget.getWidget(index)
