@@ -297,6 +297,7 @@ XHR_UPLOAD_JS = """
                 '</li>',
             messages: {
                 serverError: "%(error_server)s",
+                draftError: "%(error_draft)s",
                 serverErrorAlreadyExists: "%(error_already_exists)s {file}",
                 serverErrorZODBConflict: "%(error_zodb_conflict)s {file}, %(error_try_again)s",
                 serverErrorNoPermission: "%(error_no_permission)s",
@@ -530,21 +531,22 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             sim_upload_limit        = str(self.field.sim_upload_limit),
             button_text             = _(u'Browse'),
             draganddrop_text        = _(u'Drag and drop files to upload'),
-            msg_all_sucess          = _( u'All files uploaded with success.'),
-            msg_some_sucess         = _( u' files uploaded with success, '),
-            msg_some_errors         = _( u" uploads return an error."),
-            msg_failed              = _( u"Failed"),
-            error_try_again_wo      = _( u"please select files again without it."),
-            error_try_again         = _( u"please try again."),
-            error_empty_file        = _( u"This file is empty :"),
-            error_file_large        = _( u"This file is too large :"),
-            error_maxsize_is        = _( u"maximum file size is :"),
-            error_bad_ext           = _( u"This file has invalid extension :"),
-            error_onlyallowed       = _( u"Only allowed :"),
-            error_no_permission     = _( u"You don't have permission to add this content in this place."),
-            error_already_exists    = _( u"This file already exists with the same name on server :"),
-            error_zodb_conflict     = _( u"A data base conflict error happened when uploading this file :"),
-            error_server            = _( u"Server error, please contact support and/or try again."),
+            msg_all_sucess          = _(u'All files uploaded with success.'),
+            msg_some_sucess         = _(u' files uploaded with success, '),
+            msg_some_errors         = _(u" uploads return an error."),
+            msg_failed              = _(u"Failed"),
+            error_try_again_wo      = _(u"please select files again without it."),
+            error_try_again         = _(u"please try again."),
+            error_empty_file        = _(u"This file is empty :"),
+            error_file_large        = _(u"This file is too large :"),
+            error_maxsize_is        = _(u"maximum file size is :"),
+            error_bad_ext           = _(u"This file has invalid extension :"),
+            error_onlyallowed       = _(u"Only allowed :"),
+            error_no_permission     = _(u"You don't have permission to add this content in this place."),
+            error_already_exists    = _(u"This file already exists with the same name on server :"),
+            error_zodb_conflict     = _(u"A data base conflict error happened when uploading this file :"),
+            error_server            = _(u"Server error, please contact support and/or try again."),
+            error_draft             = _(u"A draft could not be created, please contact support."),
         )
 
         typeupload = session.get('typeupload', request.get('typeupload', ''))
@@ -695,6 +697,7 @@ from Products.CMFPlone.interfaces import IPloneSiteRoot
 from zope.app.container.interfaces import INameChooser
 from plone.i18n.normalizer.interfaces import IIDNormalizer
 
+from plone.app.z3cformdrafts.drafting import Z3cFormDraftProxy
 #import ticket as ticketmod
 #from collective.quickupload import siteMessageFactory as _
 #from collective.quickupload.browser.quickupload_settings import IQuickUploadControlPanel
@@ -814,6 +817,10 @@ class UploadFile(BrowserView):
         self.multifile_upload_file()
 
     def multifile_upload_file(self):
+        if not isinstance(self.content, Z3cFormDraftProxy):
+            logger.info("Draft does not exist; maybe user could not be authorized!")
+            return json.dumps({u'error': u'draftError'})
+
         widget = self.widget
 
         #-------------------------------------------------------------------
