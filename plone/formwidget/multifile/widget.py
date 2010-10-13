@@ -34,6 +34,7 @@ logger = logging.getLogger('plone.formwidget.multifile')
 #   display issues
 # - Remove button function
 # - Get FLASH working again
+# - If fill titles is True; then be sure to use attr on file.title
 # ------------------------------------------------------------------------------
 
 
@@ -54,90 +55,106 @@ def decode(s):
 #            'script'        : '%(action_url)s',
 #            'script'        : '@@multi-file-upload-file',
 #
-INLINE_JAVASCRIPT = """
-    jQuery(document).ready(function() {
-        function escapeExpression(str) {
-            return str.replace(/([#;&,\.\+\*\~':"\!\^$\[\]\(\)=>\|])/g, "\\$1");
-        }
-
-        var parse_response = function(data){
-            if(typeof data == "string"){
-                try{//try to parse if it's not already done...
-                    data = $.parseJSON(data);
-                }catch(e){
-                    try{
-                        data = eval("(" + data + ")");
-                    }catch(e){
-                        //do nothing
-                    }
-                }
-            }
-            return data
-        }
-
-        jQuery('#%(name)s').uploadify({
-            'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
-            'script'        : '%(action_url)s',
-            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
-            'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
-            'height'        : '30',
-            'width'         : '110',
-            'folder'        : '%(physical_path)s',
-            'scriptData'    : {'cookie': '%(cookie)s'},
-            'onSelect'      : function(event, queueId, fileObj) {
-                var e = document.getElementById('form-widgets-%(field_name)s-count');
-                var count = parseInt(e.getAttribute('value'));
-                e.setAttribute('value', count+1);
-                var filename = 'form.widgets.%(field_name)s.'+(count);
-                scriptData = {'__ac': '%(ac)s',
-                             }
-                jQuery('#%(name)s').uploadifySettings( 'scriptData', scriptData, true );
-            },
-            'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
-                var fieldname = jQuery(event.target).attr('ref');
-
-                //alert( responseJSON );
-
-                obj = parse_response(responseJSON);
-
-                //alert(obj.status);
-
-                if( obj.status == 'error' ) { return false; }
-
-                //alert(obj.html);
-
-                jQuery(event.target).siblings('.multi-file-files:first').each(
-                    function() {
-                        jQuery(this).append(jQuery(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
-
-                        //var e = document.getElementById('form-widgets-%(field_name)s-count');
-                        //e.setAttribute('value', obj.counter);
-
-                    });
-                },
-            'auto'          : true,
-            'multi'         : true,
-            'simUploadLimit': '4',
-            'queueSizeLimit': '999',
-            'sizeLimit'     : '',
-            'fileDesc'      : '',
-            'fileExt'       : '*.*',
-            'buttonText'    : 'BROWSE',
-            'buttonImg'     : '',
-            'scriptAccess'  : 'sameDomain',
-            'hideButton'    : false
-        });
-    });
-"""
+##INLINE_JAVASCRIPT = """
+##    jQuery(document).ready(function() {
+##        function escapeExpression(str) {
+##            return str.replace(/([#;&,\.\+\*\~':"\!\^$\[\]\(\)=>\|])/g, "\\$1");
+##        }
+##
+##        var parse_response = function(data){
+##            if(typeof data == "string"){
+##                try{//try to parse if it's not already done...
+##                    data = $.parseJSON(data);
+##                }catch(e){
+##                    try{
+##                        data = eval("(" + data + ")");
+##                    }catch(e){
+##                        //do nothing
+##                    }
+##                }
+##            }
+##            return data
+##        }
+##
+##//            'scriptData'    : {'cookie': '%(cookie)s'},
+##//            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
+##/*
+##            'onSelect'      : function(event, queueId, fileObj) {
+##                var e = document.getElementById('form-widgets-%(field_name)s-count');
+##                var count = parseInt(e.getAttribute('value'));
+##                e.setAttribute('value', count+1);
+##                var filename = 'form.widgets.%(field_name)s.'+(count);
+##                             }
+##                jQuery('#%(name)s').uploadifySettings( 'scriptData', scriptData, true );
+##            },
+##
+##            'fileDataName'  : 'qqfile',
+##*/
+##        jQuery('#%(name)s').uploadify({
+##            'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
+##            'script'        : '%(action_url)s',
+##            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
+##            'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
+##            'height'        : '30',
+##            'width'         : '110',
+##            'folder'        : '%(physical_path)s',
+##            'scriptData'    : {'cookie': '%(cookie)s'},
+##            'onSelect'      : function(event, queueId, fileObj) {
+##                var e = document.getElementById('form-widgets-%(field_name)s-count');
+##                var count = parseInt(e.getAttribute('value'));
+##                e.setAttribute('value', count+1);
+##                var filename = 'form.widgets.%(field_name)s.'+(count);
+##                //scriptData = {'ticket': '%(ticket)s', }
+##                scriptData = {'__ac': '%(ac)s', }
+##                jQuery('#%(name)s').uploadifySettings( 'scriptData', scriptData, true );
+##            },
+##            'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
+##                alert( responseJSON );
+##                var fieldname = jQuery(event.target).attr('ref');
+##
+##                obj = parse_response(responseJSON);
+##
+##                //alert(obj.status);
+##
+##                if( obj.status == 'error' ) { return false; }
+##
+##                //alert(obj.html);
+##
+##                jQuery(event.target).siblings('.multi-file-files:first').each(
+##                    function() {
+##                        jQuery(this).append(jQuery(document.createElement('li')).html(obj.html).attr('class', 'multi-file-file'));
+##
+##                        //var e = document.getElementById('form-widgets-%(field_name)s-count');
+##                        //e.setAttribute('value', obj.counter);
+##
+##                    });
+##                },
+##            'auto'          : true,
+##            'multi'         : true,
+##            'simUploadLimit': '4',
+##            'queueSizeLimit': '999',
+##            'sizeLimit'     : '',
+##            'fileDesc'      : '',
+##            'fileExt'       : '*.*',
+##            'buttonText'    : 'BROWSE',
+##            'buttonImg'     : '',
+##            'scriptAccess'  : 'sameDomain',
+##            'hideButton'    : false
+##        });
+##    });
+##"""
 
 #            //'uploader'      : '%(portal_url)s/++resource++quickupload_static/uploader.swf',
 #            //'script'        : '%(context_url)s/@@flash_upload_file',
 #            //'cancelImg'     : '%(portal_url)s/++resource++quickupload_static/cancel.png',
 #            //'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'}
 FLASH_UPLOAD_JS = """
-    var fillTitles = %(fill_titles)s;
-    var autoUpload = %(auto_upload)s;
+    //var fillTitles = %(fill_titles)s;
+    //var autoUpload = %(auto_upload)s;
+    var fillTitles = false;
+    var autoUpload = true;
 
+    /*
     clearQueue_%(id)s = function() {
         //alert('clearQueue');
         jQuery('#%(name)s').uploadifyClearQueue();
@@ -189,7 +206,7 @@ FLASH_UPLOAD_JS = """
         //alert('sendDataAndUpload');
         QueueItems = jQuery('#%(name)sQueue .uploadifyQueueItem');
         nbItems = QueueItems.length;
-        QueueItems.each(function(i){
+        QueueItems.each(function(){
             filesData = {};
             ID = jQuery('.file_id_field',this).val();
             if (fillTitles && !autoUpload) {
@@ -199,9 +216,11 @@ FLASH_UPLOAD_JS = """
             jQuery('#%(name)s').uploadifyUpload(ID);
         })
     }
+    */
 
 //            'fileDataName'  : 'form.widgets.%(field_name)s.buttons.add',
 //            'scriptData'    : {'__ac' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
+//            'onSelectOnce'  : addUploadifyFields_%(id)s,
     jQuery(document).ready(function() {
         jQuery('#%(name)s').uploadify({
             'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
@@ -219,27 +238,21 @@ FLASH_UPLOAD_JS = """
             'scriptAccess'  : 'sameDomain',
             'hideButton'    : false,
             'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
-            'onSelectOnce'  : addUploadifyFields_%(id)s,
             'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
-                var fieldname = jQuery(event.target).attr('ref');
-
-                // XXX: Added for multifile, since returned HTML in response does not parse
-                // correctly when added directly to an iframe body
-                responseText = doc.getElementById('json-response') ? doc.getElementById('json-response').innerHTML : doc.body.innerHTML;
                 try{
-                    response = jQuery.parseJSON( responseText );
+                    response = jQuery.parseJSON( responseJSON );
                 } catch(err){
-                    response = {};
+                    return false;
                 }
 
-                if( response.status == 'error' ) { return false; }
-                jQuery(event.target).siblings('.multi-file-files:first').each(
-                    function() {
-                        jQuery(this).append(jQuery(document.createElement('li')).html(response.html).attr('class', 'multi-file-file'));
-                        var e = document.getElementById('form-widgets-%(field_name)s-count');
-                        e.setAttribute('value', response.counter);
-                    });
-                }
+                // TODO:  Do something to indicate the error
+                if( response.error ) { return false; }
+
+                jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(response.html).attr('class', 'multi-file-file'));
+                //var e = document.getElementById('form-widgets-%(field_name)s-count');
+                //e.setAttribute('value', response.counter);
+                //alert(response.counter);
+            }
         });
     });
 """
@@ -274,8 +287,8 @@ XHR_UPLOAD_JS = """
             onAfterSelect: addUploadFields_%(id)s,
             onComplete: function (id, filename, responseJSON) {
                     jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(responseJSON.html).attr('class', 'multi-file-file'));
-                    var e = document.getElementById('form-widgets-%(field_name)s-count');
-                    e.setAttribute('value', responseJSON.counter);
+                    //var e = document.getElementById('form-widgets-%(field_name)s-count');
+                    //e.setAttribute('value', responseJSON.counter);
                 var uploader = xhr_%(id)s;
                 PloneQuickUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
             },
@@ -343,12 +356,12 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         super(z3c.form.browser.multi.MultiWidget, self).__init__(request)
         self.request.form.update(decodeQueryString(request.get('QUERY_STRING','')))
 
-    @property
-    def counterMarker(self):
-        # this get called in render from the template and contains always the
-        # right amount of widgets we use.
-        return '<input id="%s" type="hidden" name="%s" value="%d" />' % (
-            self.counterName.replace('.', '-'), self.counterName, len(self.widgets))
+##    @property
+##    def counterMarker(self):
+##        # this get called in render from the template and contains always the
+##        # right amount of widgets we use.
+##        return '<input id="%s" type="hidden" name="%s" value="%d" />' % (
+##            self.counterName.replace('.', '-'), self.counterName, len(self.widgets))
 
     @property
     def better_context(self):
@@ -425,29 +438,31 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         #return INLINE_JAVASCRIPT % self.get_settings()
 
         settings = self.upload_settings()
-
         if self.field.use_flashupload:
             return FLASH_UPLOAD_JS % settings
         else:
             return XHR_UPLOAD_JS % settings
 
-    def get_settings(self):
-        from Products.PythonScripts.standard import url_quote
-        fieldName = self.field.__name__
-        requestURL = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
-        widgetURL = requestURL + '/++widget++' + fieldName
-        return dict(
-            #name=self.get_uploader_id(),
-            #cookie=encode(self.request.cookies.get('__ac', '')),
-            #ac=url_quote(self.request.get('__ac', '')),
-            physical_path="/".join(self.better_context.getPhysicalPath()),
-            #field_name=fieldName,
-            #formname=url_quote(self.request.getURL().split('/')[-1]),
-            #widget_url=url_quote(widgetURL),
-            action_url=url_quote(widgetURL),
-            id=self.get_uploader_id(),
-            ticket='',
-            )
+##    def get_settings(self):
+##        from Products.PythonScripts.standard import url_quote
+##        fieldName = self.field.__name__
+##        requestURL = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
+##        widgetURL = requestURL + '/++widget++' + fieldName
+##
+##        return dict(
+##            name          = self.get_uploader_id(),
+##            cookie        = encode(self.request.cookies.get('__ac', '')),
+##            ac            = url_quote(self.request.get('__ac', '')),
+##            physical_path = "/".join(self.better_context.getPhysicalPath()),
+##            field_name    = fieldName,
+##            formname      = url_quote(self.request.getURL().split('/')[-1]),
+##            widget_url    = url_quote(widgetURL),
+##            action_url    = url_quote(widgetURL),
+##            id            = self.get_uploader_id(),
+##            ticket        = encode(self.request.cookies.get('__ac', '')),
+##            typeupload    = '',
+##            #action_url    = url_quote(widgetURL + '/@@multifile_flash_upload_file')
+##            )
 
     def content_types_infos (self, allowable_file_extensions):
         """
@@ -601,41 +616,61 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
 
         return widget
 
+##    def extract(self, default=interfaces.NO_VALUE):
+##        # This method is responsible to get the widgets value based on the
+##        # widget value only since items are never added via a form directly
+##        # (tey are added one at a time via ajax).
+##        if self.request.get(self.counterName) is None:
+##            # counter marker not found
+##            return interfaces.NO_VALUE
+##        counter = int(self.request.get(self.counterName, 0))
+##        values = []
+##        append = values.append
+##        # extract value for existing widgets
+##        value = zope.component.getMultiAdapter( (self.context, self.field),
+##                                                interfaces.IDataManager).query()
+##        for idx in range(counter):
+##            widget = self.getWidget(idx)
+##            # Added for drafts code since its possible to have counter and no
+##            # request.form value; especially if ajax validation is enabled
+##            if (widget.value is None and widget.name not in self.request):
+##                if not isinstance(value, list) or idx >= len(value):
+##                    continue
+##                widget.value = value[idx]
+##            append(widget.value)
+##        if len(values) == 0:
+##            # no multi value found
+##            return interfaces.NO_VALUE
+##        return values
     def extract(self, default=interfaces.NO_VALUE):
-        # This method is responsible to get the widgets value based on the
-        # widget value only since items are never added via a form directly
-        # (tey are added one at a time via ajax).
-        if self.request.get(self.counterName) is None:
-            # counter marker not found
-            return interfaces.NO_VALUE
-        counter = int(self.request.get(self.counterName, 0))
+        """ This method is responsible to get the widgets value based on the
+        widget value in the draft only, since it can never be added directly
+        via a form (uses ajax calls)."""
+
         values = []
         append = values.append
-        # extract value for existing widgets
-        value = zope.component.getMultiAdapter( (self.context, self.field),
-                                                interfaces.IDataManager).query()
-        for idx in range(counter):
+
+        draftValue = zope.component.getMultiAdapter(
+            (self.context, self.field), interfaces.IDataManager).query()
+
+        for idx in range(len(draftValue)):
             widget = self.getWidget(idx)
-            # Added for drafts code since its possible to have counter and no
-            # request.form value; especially if ajax validation is enabled
-            if (widget.value is None and widget.name not in self.request):
-                if not isinstance(value, list) or idx >= len(value):
-                    continue
-                widget.value = value[idx]
-            append(widget.value)
+            append(draftValue[idx])
         if len(values) == 0:
             # no multi value found
             return interfaces.NO_VALUE
         return values
 
-    @button.buttonAndHandler(_('Add'), name='add',
-                             condition=attrgetter('allowAdding'))
-    def handleAdd(self, action):
-        """The uploadify flash calls this view for every file added interactively.
-        This view saves the file in the session and returns the key where the file
-        can be found in the session. When the form is actually submitted the
-        widget gets the file from the session and stores it in the actual target.
-        """
+##    @button.buttonAndHandler(_('Add'), name='add',
+##                             condition=attrgetter('allowAdding'))
+##    def handleAdd(self, action):
+##        """The uploadify flash calls this view for every file added interactively.
+##        This view saves the file in the session and returns the key where the file
+##        can be found in the session. When the form is actually submitted the
+##        widget gets the file from the session and stores it in the actual target.
+##        """
+##        return
+##
 ##        try:
 ##            import json
 ##        except:
@@ -662,10 +697,10 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
 ##        self.responseJSON = json.dumps(responseJSON)
 ##
 ##        #return json.dumps(ERROR)
-
-    # REMOVE once not needed anymore????
-    def __call__(self):
-        return self.render()
+##
+##    # REMOVE once not needed anymore????
+##    def __call__(self):
+##        return self.render()
 
 @implementer(IFieldWidget)
 def MultiFileFieldWidget(field, request):
@@ -800,11 +835,14 @@ class UploadFile(BrowserView):
 
         self.content = aq_inner(self.widget.context)
 
-        # Need to validate user for flashupload, and get draft
+        # FlashUpload does not authenicate properly, therefore a draft would
+        # not have been created yet, so we need to update the form which in
+        # turn will load the draft
         if self.widget.field.use_flashupload:
             self.request.set('__ac', decode(self.request.get('ticket')))
             self.widget.form.update()
-            self.content = self.widget.form.widgets.content
+            self.widget = self.widget.form.widgets[self.widget.field.__name__]
+            self.content = aq_inner(self.widget.context)
 
     def __call__(self):
         #if self.widget.field.use_flashupload:
@@ -814,7 +852,7 @@ class UploadFile(BrowserView):
         return self.multifile_upload_file()
 
     def multifile_flash_upload_file(self):
-        self.multifile_upload_file()
+        return self.multifile_upload_file()
 
     def multifile_upload_file(self):
         if not isinstance(self.content, Z3cFormDraftProxy):
@@ -915,11 +953,10 @@ class UploadFile(BrowserView):
             responseJSON = {u'error': f['error']}
 
         # If iframe was used; wrap the response in a <script> tag or will get json parse errors
-        if not request.HTTP_X_REQUESTED_WITH:
-            return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
-        else:
+        if request.HTTP_X_REQUESTED_WITH or self.widget.field.use_flashupload:
             return json.dumps(responseJSON)
-
+        else:
+            return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
 
     def _check_file_size(self, data):
         max_size = int(self.widget.field.size_limit)

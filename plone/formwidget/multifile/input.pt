@@ -52,7 +52,7 @@
           <li tal:repeat="html view/get_data"
               tal:replace="structure html" />
         </ul>
-        <input type="hidden" tal:replace="structure view/counterMarker" />
+        <!--input type="hidden" tal:replace="structure view/counterMarker" /-->
       </div>
 
       <!-- Upload button and drag/drop zone -->
@@ -70,9 +70,9 @@
            </div>
 
       <!-- uploader comes here -->
-      <!--div id="uploader"
+      <div id="uploader"
            class="main-uploader"
-           tal:attributes="id uploader_id"></div-->
+           tal:attributes="id uploader_id"></div>
 
       <!-- upload button -->
       <input type="hidden"
