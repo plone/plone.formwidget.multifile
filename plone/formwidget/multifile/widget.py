@@ -119,21 +119,21 @@ INLINE_JAVASCRIPT = """
 #            //'cancelImg'     : '%(portal_url)s/++resource++quickupload_static/cancel.png',
 #            //'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'}
 FLASH_UPLOAD_JS = """
-    var fillTitles = %(ul_fill_titles)s;
-    var autoUpload = %(ul_auto_upload)s;
+    var fillTitles = %(fill_titles)s;
+    var autoUpload = %(auto_upload)s;
 
-    clearQueue_%(ul_id)s = function() {
+    clearQueue_%(id)s = function() {
         //alert('clearQueue');
         jQuery('#%(name)s').uploadifyClearQueue();
     }
 
-    addUploadifyFields_%(ul_id)s = function(event, data ) {
+    addUploadifyFields_%(id)s = function(event, data ) {
         //alert('addUploadifyFields');
         if (fillTitles && !autoUpload)  {
             //alert('fillTtiles && !autoUpload');
             var labelfiletitle = jQuery('#uploadify_label_file_title').val();
             jQuery('#%(name)sQueue .uploadifyQueueItem').each(function() {
-                ID = jQuery(this).attr('id').replace('%(ul_id)s','');
+                ID = jQuery(this).attr('id').replace('%(id)s','');
                 if (!jQuery('.uploadField' ,this).length) {
                   jQuery('.cancel' ,this).after('\
                       <div class="uploadField">\
@@ -154,13 +154,13 @@ FLASH_UPLOAD_JS = """
         }
         if (!autoUpload) {
             //alert('!autoUpload');
-            return showButtons_%(ul_id)s();
+            return showButtons_%(id)s();
         }
         //alert('ok');
         return 'ok';
     }
 
-    showButtons_%(ul_id)s = function() {
+    showButtons_%(id)s = function() {
         //alert('showButtons');
         if (jQuery('#%(name)sQueue .uploadifyQueueItem').length) {
             jQuery('.uploadifybuttons').show();
@@ -169,7 +169,7 @@ FLASH_UPLOAD_JS = """
         return false;
     }
 
-    sendDataAndUpload_%(ul_id)s = function() {
+    sendDataAndUpload_%(id)s = function() {
         //alert('sendDataAndUpload');
         QueueItems = jQuery('#%(name)sQueue .uploadifyQueueItem');
         nbItems = QueueItems.length;
@@ -193,15 +193,15 @@ FLASH_UPLOAD_JS = """
             'folder'        : '%(physical_path)s',
             'auto'          : autoUpload,
             'multi'         : true,
-            'simUploadLimit': %(ul_sim_upload_limit)s,
-            'sizeLimit'     : '%(ul_size_limit)s',
-            'fileDesc'      : '%(ul_file_description)s',
-            'fileExt'       : '%(ul_file_extensions)s',
-            'buttonText'    : '%(ul_button_text)s',
+            'simUploadLimit': %(sim_upload_limit)s,
+            'sizeLimit'     : '%(size_limit)s',
+            'fileDesc'      : '%(file_description)s',
+            'fileExt'       : '%(file_extensions)s',
+            'buttonText'    : '%(button_text)s',
             'scriptAccess'  : 'sameDomain',
             'hideButton'    : false,
             'scriptData'    : {'__ac' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
-            'onSelectOnce'  : addUploadifyFields_%(ul_id)s,
+            'onSelectOnce'  : addUploadifyFields_%(id)s,
             'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
                 var fieldname = jQuery(event.target).attr('ref');
                 obj = jsonParse(responseJSON);
@@ -218,68 +218,68 @@ FLASH_UPLOAD_JS = """
 """
 
 XHR_UPLOAD_JS = """
-    var fillTitles = %(ul_fill_titles)s;
-    var auto = %(ul_auto_upload)s;
+    var fillTitles = %(fill_titles)s;
+    var auto = %(auto_upload)s;
 
-    addUploadFields_%(ul_id)s = function(file, id) {
-        var uploader = xhr_%(ul_id)s;
+    addUploadFields_%(id)s = function(file, id) {
+        var uploader = xhr_%(id)s;
         PloneQuickUpload.addUploadFields(uploader, uploader._element, file, id, fillTitles);
     }
-    sendDataAndUpload_%(ul_id)s = function() {
-        var uploader = xhr_%(ul_id)s;
+    sendDataAndUpload_%(id)s = function() {
+        var uploader = xhr_%(id)s;
         PloneQuickUpload.sendDataAndUpload(uploader, uploader._element, '%(typeupload)s');
     }
-    clearQueue_%(ul_id)s = function() {
-        var uploader = xhr_%(ul_id)s;
+    clearQueue_%(id)s = function() {
+        var uploader = xhr_%(id)s;
         PloneQuickUpload.clearQueue(uploader, uploader._element);
     }
-    onUploadComplete_%(ul_id)s = function(id, fileName, responseJSON) {
-        var uploader = xhr_%(ul_id)s;
+    onUploadComplete_%(id)s = function(id, fileName, responseJSON) {
+        var uploader = xhr_%(id)s;
         PloneQuickUpload.onUploadComplete(uploader, uploader._element, id, fileName, responseJSON);
     }
-    createUploader_%(ul_id)s= function(){
-        xhr_%(ul_id)s = new qq.FileUploader({
+    createUploader_%(id)s= function(){
+        xhr_%(id)s = new qq.FileUploader({
             element: jQuery('#%(name)s')[0],
             action: '%(action_url)s',
             autoUpload: auto,
             cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
 
-            onAfterSelect: addUploadFields_%(ul_id)s,
+            onAfterSelect: addUploadFields_%(id)s,
             onComplete: function (id, filename, responseJSON) {
                     jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(responseJSON.html).attr('class', 'multi-file-file'));
                     var e = document.getElementById('form-widgets-%(field_name)s-count');
                     e.setAttribute('value', responseJSON.counter);
-                var uploader = xhr_%(ul_id)s;
+                var uploader = xhr_%(id)s;
                 PloneQuickUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
             },
 
-            allowedExtensions: %(ul_file_extensions_list)s,
-            sizeLimit: %(ul_xhr_size_limit)s,
-            simUploadLimit: %(ul_sim_upload_limit)s,
+            allowedExtensions: %(file_extensions_list)s,
+            sizeLimit: %(xhr_size_limit)s,
+            simUploadLimit: %(sim_upload_limit)s,
             template: '<div class="qq-uploader">' +
-                      '<div class="qq-upload-drop-area"><span>%(ul_draganddrop_text)s</span></div>' +
-                      '<div class="qq-upload-button">%(ul_button_text)s</div>' +
+                      '<div class="qq-upload-drop-area"><span>%(draganddrop_text)s</span></div>' +
+                      '<div class="qq-upload-button">%(button_text)s</div>' +
                       '<ul class="qq-upload-list"></ul>' +
                       '</div>',
             fileTemplate: '<li>' +
                     '<a class="qq-upload-cancel" href="#">&nbsp;</a>' +
                     '<div class="qq-upload-infos"><span class="qq-upload-file"></span>' +
                     '<span class="qq-upload-spinner"></span>' +
-                    '<span class="qq-upload-failed-text">%(ul_msg_failed)s</span></div>' +
+                    '<span class="qq-upload-failed-text">%(msg_failed)s</span></div>' +
                     '<div class="qq-upload-size"></div>' +
                 '</li>',
             messages: {
-                serverError: "%(ul_error_server)s",
-                serverErrorAlwaysExist: "%(ul_error_always_exists)s {file}",
-                serverErrorZODBConflict: "%(ul_error_zodb_conflict)s {file}, %(ul_error_try_again)s",
-                serverErrorNoPermission: "%(ul_error_no_permission)s",
-                typeError: "%(ul_error_bad_ext)s {file}. %(ul_error_onlyallowed)s {extensions}.",
-                sizeError: "%(ul_error_file_large)s {file}, %(ul_error_maxsize_is)s {sizeLimit}.",
-                emptyError: "%(ul_error_empty_file)s {file}, %(ul_error_try_again_wo)s"
+                serverError: "%(error_server)s",
+                serverErrorAlreadyExists: "%(error_already_exists)s {file}",
+                serverErrorZODBConflict: "%(error_zodb_conflict)s {file}, %(error_try_again)s",
+                serverErrorNoPermission: "%(error_no_permission)s",
+                typeError: "%(error_bad_ext)s {file}. %(error_onlyallowed)s {extensions}.",
+                sizeError: "%(error_file_large)s {file}, %(error_maxsize_is)s {sizeLimit}.",
+                emptyError: "%(error_empty_file)s {file}, %(error_try_again_wo)s"
             }
         });
     }
-    jQuery(document).ready(createUploader_%(ul_id)s);
+    jQuery(document).ready(createUploader_%(id)s);
 """
 
 
@@ -290,9 +290,8 @@ import z3c.form.browser.multi
 from z3c.form import button
 from plone.app.drafts.interfaces import IDraftable
 from plone.dexterity.i18n import MessageFactory as _
-from plone.formwidget.multifile.quickupload_settings import IQuickUploadControlPanel
 class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
-    implements(IMultiFileWidget, IPublishTraverse, IDraftable, IQuickUploadControlPanel)
+    implements(IMultiFileWidget, IPublishTraverse, IDraftable)
 
     klass = u'multi-file-widget'
 
@@ -304,11 +303,13 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     responseJSON = None
 
     # See IQuickUploadControlPanel
-    use_flashupload = False
-    auto_upload = True
-    fill_titles = False
-    size_limit = 0
-    sim_upload_limit = 2
+    #use_flashupload = False
+    #auto_upload = True
+    #fill_titles = False
+    #size_limit = 0
+    #sim_upload_limit = 2
+
+    # TODO:  Need allowed content type extensions; lookup archetypes name
 
     def __init__(self, request):
         super(z3c.form.browser.multi.MultiWidget, self).__init__(request)
@@ -413,11 +414,51 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             #formname=url_quote(self.request.getURL().split('/')[-1]),
             #widget_url=url_quote(widgetURL),
             action_url=url_quote(widgetURL),
-            ul_id=self.get_uploader_id(),
+            id=self.get_uploader_id(),
             ticket='',
             )
 
+    def content_types_infos (self, allowable_file_extensions):
+        """
+        return some content types infos depending on allowable_file_extensions type
+        allowable_file_extensions could be 'image', 'video', 'audio' or any
+        extension like '*.doc'
+        """
+        context = aq_inner(self.context)
+        ext = '*.*;'
+        extlist = []
+        msg = _(u'Choose files to upload')
+        if allowable_file_extensions == 'image' :
+            ext = '*.jpg;*.jpeg;*.gif;*.png;'
+            msg = _(u'Choose images to upload')
+        elif allowable_file_extensions == 'video' :
+            ext = '*.flv;*.avi;*.wmv;*.mpg;'
+            msg = _(u'Choose video files to upload')
+        elif allowable_file_extensions == 'audio' :
+            ext = '*.mp3;*.wav;*.ogg;*.mp4;*.wma;*.aif;'
+            msg = _(u'Choose audio files to upload')
+        elif allowable_file_extensions == 'flash' :
+            ext = '*.swf;'
+            msg = _(u'Choose flash files to upload')
+        elif allowable_file_extensions :
+            # you can also pass a list of extensions in allowable_file_extensions request var
+            # with this syntax '*.aaa;*.bbb;'
+            ext = allowable_file_extensions
+            msg = _(u'Choose file for upload : ') + ext
+
+        try :
+            extlist = [f.split('.')[1].strip() for f in ext.split(';') if f.strip()]
+        except :
+            extlist = []
+        if extlist==['*'] :
+            extlist = []
+
+        return ( ext, extlist, msg)
+
+
     def upload_settings(self):
+        """Returns a dectionary contianing settings required for javascript
+        """
         from Products.PythonScripts.standard import url_quote
         context = aq_inner(self.better_context)
         request = self.request
@@ -438,56 +479,47 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         action_url=url_quote(widgetURL + '/@@multifile_upload_file')
 
         settings = dict(
-            action_url             = action_url,
-            field_name             = self.field.__name__,
-            ticket                 = ticket,
-            portal_url             = portal_url,
-            typeupload             = '',
-            context_url            = context.absolute_url(),
-            physical_path          = "/".join(context.getPhysicalPath()),
-            ul_id                  = self.get_uploader_function_id(),
-            file_list_id           = self.get_file_list_id(),
-            name                   = self.get_uploader_id(),
-            ul_fill_titles         = self.fill_titles and 'true' or 'false',
-            ul_auto_upload         = self.auto_upload and 'true' or 'false',
-            ul_size_limit          = self.size_limit and str(self.size_limit*1024) or '',
-            ul_xhr_size_limit      = self.size_limit and str(self.size_limit*1024) or '0',
-            ul_sim_upload_limit    = str(self.sim_upload_limit),
-            ul_button_text         = _(u'Browse'),
-            ul_draganddrop_text    = _(u'Drag and drop files to upload'),
-            ul_msg_all_sucess      = _( u'All files uploaded with success.'),
-            ul_msg_some_sucess     = _( u' files uploaded with success, '),
-            ul_msg_some_errors     = _( u" uploads return an error."),
-            ul_msg_failed          = _( u"Failed"),
-            ul_error_try_again_wo  = _( u"please select files again without it."),
-            ul_error_try_again     = _( u"please try again."),
-            ul_error_empty_file    = _( u"This file is empty :"),
-            ul_error_file_large    = _( u"This file is too large :"),
-            ul_error_maxsize_is    = _( u"maximum file size is :"),
-            ul_error_bad_ext       = _( u"This file has invalid extension :"),
-            ul_error_onlyallowed   = _( u"Only allowed :"),
-            ul_error_no_permission = _( u"You don't have permission to add this content in this place."),
-            ul_error_always_exists = _( u"This file always exists with the same name on server :"),
-            ul_error_zodb_conflict = _( u"A data base conflict error happened when uploading this file :"),
-            ul_error_server        = _( u"Server error, please contact support and/or try again."),
+            action_url              = action_url,
+            field_name              = self.field.__name__,
+            ticket                  = ticket,
+            portal_url              = portal_url,
+            typeupload              = '',
+            context_url             = context.absolute_url(),
+            physical_path           = "/".join(context.getPhysicalPath()),
+            id                      = self.get_uploader_function_id(),
+            file_list_id            = self.get_file_list_id(),
+            name                    = self.get_uploader_id(),
+            fill_titles             = self.field.fill_titles and 'true' or 'false',
+            auto_upload             = self.field.auto_upload and 'true' or 'false',
+            size_limit              = self.field.size_limit and str(self.size_limit*1024) or '',
+            xhr_size_limit          = self.field.size_limit and str(self.size_limit*1024) or '0',
+            sim_upload_limit        = str(self.field.sim_upload_limit),
+            button_text             = _(u'Browse'),
+            draganddrop_text        = _(u'Drag and drop files to upload'),
+            msg_all_sucess          = _( u'All files uploaded with success.'),
+            msg_some_sucess         = _( u' files uploaded with success, '),
+            msg_some_errors         = _( u" uploads return an error."),
+            msg_failed              = _( u"Failed"),
+            error_try_again_wo      = _( u"please select files again without it."),
+            error_try_again         = _( u"please try again."),
+            error_empty_file        = _( u"This file is empty :"),
+            error_file_large        = _( u"This file is too large :"),
+            error_maxsize_is        = _( u"maximum file size is :"),
+            error_bad_ext           = _( u"This file has invalid extension :"),
+            error_onlyallowed       = _( u"Only allowed :"),
+            error_no_permission     = _( u"You don't have permission to add this content in this place."),
+            error_already_exists    = _( u"This file already exists with the same name on server :"),
+            error_zodb_conflict     = _( u"A data base conflict error happened when uploading this file :"),
+            error_server            = _( u"Server error, please contact support and/or try again."),
         )
 
-        mediaupload = session.get('mediaupload', request.get('mediaupload', ''))
         typeupload = session.get('typeupload', request.get('typeupload', ''))
         settings['typeupload'] = typeupload
-        #if mediaupload :
-        #    ul_content_types_infos = self.ul_content_types_infos(mediaupload)
-        #elif typeupload :
-        #    imageTypes = _listTypesForInterface(context, IImageContent)
-        #    if typeupload in imageTypes :
-        #        ul_content_types_infos = self.ul_content_types_infos('image')
-        #else :
-        #    ul_content_types_infos = ('*.*;', [], '')
-        ul_content_types_infos = ('*.*;', [], '')
 
-        settings['ul_file_extensions'] = ul_content_types_infos[0]
-        settings['ul_file_extensions_list'] = str(ul_content_types_infos[1])
-        settings['ul_file_description'] = ul_content_types_infos[2]
+        content_types_infos = self.content_types_infos(self.field.allowable_file_extensions)
+        settings['file_extensions'] = content_types_infos[0]
+        settings['file_extensions_list'] = str(content_types_infos[1])
+        settings['file_description'] = content_types_infos[2]
 
         return settings
 
@@ -659,55 +691,55 @@ def decodeQueryString(QueryString):
 #        data = decodeQueryString(request.get('QUERY_STRING','')).get(dataitem)
 #    return data
 
-def find_user(context, userid):
-    """Walk up all of the possible acl_users to find the user with the
-    given userid.
-    """
+##def find_user(context, userid):
+##    """Walk up all of the possible acl_users to find the user with the
+##    given userid.
+##    """
+##
+##    track = set()
+##
+##    acl_users = aq_inner(getToolByName(context, 'acl_users'))
+##    path = '/'.join(acl_users.getPhysicalPath())
+##    logger.debug('Visited acl_users "%s"' % path)
+##    track.add(path)
+##
+##    user = acl_users.getUserById(userid)
+##    while user is None and acl_users is not None:
+##        context = aq_parent(aq_parent(aq_inner(acl_users)))
+##        acl_users = aq_inner(getToolByName(context, 'acl_users'))
+##        if acl_users is not None:
+##            path = '/'.join(acl_users.getPhysicalPath())
+##            logger.debug('Visited acl_users "%s"' % path)
+##            if path in track:
+##                logger.warn('Tried searching an already visited acl_users, '
+##                            '"%s".  All visited are: %r' % (path, list(track)))
+##                break
+##            track.add(path)
+##            user = acl_users.getUserById(userid)
+##
+##    if user is not None:
+##        user = user.__of__(acl_users)
+##
+##    return user
 
-    track = set()
-
-    acl_users = aq_inner(getToolByName(context, 'acl_users'))
-    path = '/'.join(acl_users.getPhysicalPath())
-    logger.debug('Visited acl_users "%s"' % path)
-    track.add(path)
-
-    user = acl_users.getUserById(userid)
-    while user is None and acl_users is not None:
-        context = aq_parent(aq_parent(aq_inner(acl_users)))
-        acl_users = aq_inner(getToolByName(context, 'acl_users'))
-        if acl_users is not None:
-            path = '/'.join(acl_users.getPhysicalPath())
-            logger.debug('Visited acl_users "%s"' % path)
-            if path in track:
-                logger.warn('Tried searching an already visited acl_users, '
-                            '"%s".  All visited are: %r' % (path, list(track)))
-                break
-            track.add(path)
-            user = acl_users.getUserById(userid)
-
-    if user is not None:
-        user = user.__of__(acl_users)
-
-    return user
-
-def _listTypesForInterface(context, interface):
-    """
-    List of portal types that have File interface
-    @param context: context
-    @param interface: Zope interface
-    @return: ['Image', 'News Item']
-    """
-    archetype_tool = getToolByName(context, 'archetype_tool')
-    all_types = archetype_tool.listRegisteredTypes(inProject=True)
-    # zope3 Interface
-    try :
-        all_types = [tipe['portal_type'] for tipe in all_types
-                      if interface.implementedBy(tipe['klass'])]
-    # zope2 interface
-    except :
-        all_types = [tipe['portal_type'] for tipe in all_types
-                      if interface.isImplementedByInstancesOf(tipe['klass'])]
-    return dict.fromkeys(all_types).keys()
+##def _listTypesForInterface(context, interface):
+##    """
+##    List of portal types that have File interface
+##    @param context: context
+##    @param interface: Zope interface
+##    @return: ['Image', 'News Item']
+##    """
+##    archetype_tool = getToolByName(context, 'archetype_tool')
+##    all_types = archetype_tool.listRegisteredTypes(inProject=True)
+##    # zope3 Interface
+##    try :
+##        all_types = [tipe['portal_type'] for tipe in all_types
+##                      if interface.implementedBy(tipe['klass'])]
+##    # zope2 interface
+##    except :
+##        all_types = [tipe['portal_type'] for tipe in all_types
+##                      if interface.isImplementedByInstancesOf(tipe['klass'])]
+##    return dict.fromkeys(all_types).keys()
 
 
 class UploadFile(BrowserView):
@@ -729,9 +761,10 @@ class UploadFile(BrowserView):
         self.content = aq_inner(self.widget.context)
 
     def __call__(self):
-        #if self.use_flashupload:
-        #    return self.multifile_flash_upload_file()
-        return self.multifile_upload_file()
+        if self.field.use_flashupload:
+            return self.multifile_flash_upload_file()
+        else:
+            return self.multifile_upload_file()
 
     def multifile_flash_upload_file(self):
         pass
@@ -782,9 +815,9 @@ class UploadFile(BrowserView):
         if not file_data:
             return json.dumps({u'error': u'emptyError'})
 
-        if not self._check_file_id(file_name) :
-            logger.info("The file id for %s always exist, upload rejected" % file_name)
-            return json.dumps({u'error': u'serverErrorAlwaysExist'})
+        if not self._check_file_id(widget, file_name) :
+            logger.info("The file id for %s already exists, upload rejected" % file_name)
+            return json.dumps({u'error': u'serverErrorAlreadyExists'})
 
         content_type = mimetypes.guess_type(file_name)[0]
         # sometimes plone mimetypes registry could be more powerful
@@ -842,20 +875,24 @@ class UploadFile(BrowserView):
 
 
     def _check_file_size(self, data):
-        max_size = int(self.widget.size_limit)
+        max_size = int(self.widget.field.size_limit)
         if not max_size :
             return 1
         #file_size = len(data.read()) / 1024
         data.seek(0, os.SEEK_END)
         file_size = data.tell() / 1024
         data.seek(0, os.SEEK_SET )
-        max_size = int(self.widget.size_limit)
+        max_size = int(self.widget.field.size_limit)
         if file_size<=max_size:
             return 1
         return 0
 
-    def _check_file_id(self, id):
+    def _check_file_id(self, widget, filename):
+        for file_ in widget.value:
+            if file_.filename == filename:
+                return False
         return True
+
 ##        context = aq_inner(self.context)
 ##        charset = context.getCharset()
 ##        id = id.decode(charset)
@@ -883,16 +920,16 @@ class CheckFile(BrowserView):
         request = self.request
 ##        url = context.absolute_url()
 ##
-##        always_exist = {}
+##        already_exists = {}
 ##        formdict = request.form
 ##        ids = context.objectIds()
 ##
 ##        for k,v in formdict.items():
 ##            if k!='folder' :
 ##                if v in ids :
-##                    always_exist[k] = v
+##                    already_exists[k] = v
 ##
-##        return str(always_exist)
+##        return str(already_exists)
 
 
     def __call__(self):

@@ -55,7 +55,7 @@
       /-->
 
   <!-- quick upload control panel adapter -->
-  <adapter factory=".quickupload_settings.QuickUploadControlPanelAdapter" />
+  <!--adapter factory=".quickupload_settings.QuickUploadControlPanelAdapter" /-->
 
   <!-- quick upload control panel form view -->
   <!--browser:page
