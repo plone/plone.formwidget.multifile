@@ -5,6 +5,9 @@
 a.multifileremove:click {
     evt-click-preventdefault: True;
 
+    action-client: replaceInnerHTML;
+    replaceInnerHTML-html: "Removing. Please Wait...";
+
     action-server: multifile_remove;
 
     multifile_remove-formname:      kssAttr('formname', true);

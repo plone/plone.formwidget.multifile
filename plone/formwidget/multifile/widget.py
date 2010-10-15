@@ -37,6 +37,14 @@ logger = logging.getLogger('plone.formwidget.multifile')
 #   image ajax for preview
 # - if multi is true, disable browse button allwoing one 1 image
 # - add number of files max; size; etc and disable button on max
+#
+# KSS STUFF
+# - Implement kss security; make sure only valid user can delete!!!
+# - try using onMouseUp instead of click; want to see click
+# - add a spinner to indicate somethings happening?
+# - broke download file if files were deleted; add logic if filename!=filename
+#   to loop and find
+
 # ------------------------------------------------------------------------------
 # BUGS
 # ------------------------------------------------------------------------------

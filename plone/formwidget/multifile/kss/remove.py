@@ -53,14 +53,6 @@ def remove(fieldname, filelistid, filename, fileindex, widget, ksscore, kssplone
     """Just used to test logic out since it will not be cached like class
     above!"""
 
-    # TODO:
-    # --------------------------------------------------------------------------
-    # - Implement security; make sure only valid user can delete!!!
-    # - try using onMouseUp instead of click; want to see click
-    # - add a spinner to indicate somethings happening?
-    # -
-    # --------------------------------------------------------------------------
-
     # Make sure draft proxy exists or we will be editing real content object
     if not isinstance(widget.context, Z3cFormDraftProxy):
         kssplone.issuePortalMessage(_(u'ERROR:  Can not delete %s; draft proxy is not enabled.  Contact Administrator' % filename), msgtype='error')
