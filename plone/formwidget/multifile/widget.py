@@ -32,16 +32,13 @@ logger = logging.getLogger('plone.formwidget.multifile')
 # - get drag/drop working
 # - fix to work with deco (deco converts js <> to &lt; %gt; which is causing
 #   display issues
-# - Remove add button function
-# - If fill titles is True; then be sure to use attr on file.title
-#   (allow field to be updated or false); more for when saving images in own
-#   folder)  <-- Git rid of fill_titles; can be done after file uploaded once
-#   template is returned!!!!!!
 # - Display errors in flash upload on error
+# - Add option to allow multi or not (incase developer just wants to use
+#   image ajax for preview
 # ------------------------------------------------------------------------------
 # BUGS
 # ------------------------------------------------------------------------------
-# - maunal upload broken for flash; staticly set to auto; no titles for now
+# - IE8 displays a blank <li> item in between each upload
 # ------------------------------------------------------------------------------
 
 
@@ -66,7 +63,7 @@ FLASH_UPLOAD_JS = """
             'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
             'folder'        : '%(physical_path)s',
             'auto'          : true,
-            'multi'         : true,
+            'multi'         : %(multi)s,
             'simUploadLimit': %(sim_upload_limit)s,
             'sizeLimit'     : '%(size_limit)s',
             'fileDesc'      : '%(file_description)s',
@@ -92,39 +89,20 @@ FLASH_UPLOAD_JS = """
 """
 
 XHR_UPLOAD_JS = """
-    var fillTitles = false
-    var auto = true
-
-    addUploadFields_%(id)s = function(file, id) {
-        var uploader = xhr_%(id)s;
-        PloneQuickUpload.addUploadFields(uploader, uploader._element, file, id, fillTitles);
-    }
-    sendDataAndUpload_%(id)s = function() {
-        var uploader = xhr_%(id)s;
-        PloneQuickUpload.sendDataAndUpload(uploader, uploader._element, '%(typeupload)s');
-    }
-    clearQueue_%(id)s = function() {
-        var uploader = xhr_%(id)s;
-        PloneQuickUpload.clearQueue(uploader, uploader._element);
-    }
-    onUploadComplete_%(id)s = function(id, fileName, responseJSON) {
-        var uploader = xhr_%(id)s;
-        PloneQuickUpload.onUploadComplete(uploader, uploader._element, id, fileName, responseJSON);
-    }
     createUploader_%(id)s= function(){
         xhr_%(id)s = new qq.FileUploader({
             element: jQuery('#%(name)s')[0],
             action: '%(action_url)s',
             autoUpload: true,
+            multi: %(multi)s,
             cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
 
-            onAfterSelect: addUploadFields_%(id)s,
             onComplete: function (id, filename, responseJSON) {
                     jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(responseJSON.html).attr('class', 'multi-file-file'));
                     //var e = document.getElementById('form-widgets-%(field_name)s-count');
                     //e.setAttribute('value', responseJSON.counter);
                 var uploader = xhr_%(id)s;
-                PloneQuickUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
+                MultiFileUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
             },
 
             allowedExtensions: %(file_extensions_list)s,
@@ -174,8 +152,6 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     display_template = ViewPageTemplateFile('display.pt')
     file_template = ViewPageTemplateFile('file_template.pt')
 
-    responseJSON = None
-
     def __init__(self, request):
         super(z3c.form.browser.multi.MultiWidget, self).__init__(request)
         self.request.form.update(decodeQueryString(request.get('QUERY_STRING','')))
@@ -187,10 +163,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     def render(self):
         self.update()
         if self.mode == 'input':
-            if self.responseJSON is not None:
-                return self.responseJSON
-            else:
-                return self.input_template(self)
+            return self.input_template(self)
         else:
             return self.display_template(self)
 
@@ -206,18 +179,15 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             for i, file_ in enumerate(self.value):
                 yield self.render_file(file_, index=i)
 
-    #def render_file(self, file_, value=None, index=None, context=None):
     def render_file(self, file_, index=None, context=None):
         """Renders the <li> for one file.
         """
         if context == None:
             context = self.better_context
 
-        #if value == None and index == None:
         if index == None:
             raise ValueError('Either value or index expected')
 
-        #if value == None:
         value = 'index:%i' % index
         view_name = self.name[len(self.form.prefix):]
         view_name = view_name[len(self.form.widgets.prefix):]
@@ -227,6 +197,9 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             index,
             file_.filename
             )
+
+        #form.widgets.imagelist.0.remove': u'1',
+        #form.widgets.imagelist.buttons.remove': u'Remove selected'
         remove_url = '%s/++widget++%s/%i/@@download/%s' % (
             self.request.getURL(),
             view_name,
@@ -252,8 +225,6 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         self.portal = getSite()
 
     def get_inline_js(self):
-        #return INLINE_JAVASCRIPT % self.get_settings()
-
         settings = self.upload_settings()
         if self.field.use_flashupload:
             return FLASH_UPLOAD_JS % settings
@@ -320,6 +291,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             action_url=url_quote(widgetURL + '/@@multifile_upload_file')
 
         settings = dict(
+            multi                   = self.field.multi and 'true' or 'false',
             action_url              = action_url,
             field_name              = self.field.__name__,
             ticket                  = ticket,
@@ -330,8 +302,6 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             id                      = self.get_uploader_function_id(),
             file_list_id            = self.get_file_list_id(),
             name                    = self.get_uploader_id(),
-            fill_titles             = self.field.fill_titles and 'true' or 'false',
-            auto_upload             = self.field.auto_upload and 'true' or 'false',
             size_limit              = self.field.size_limit and str(self.size_limit*1024) or '',
             xhr_size_limit          = self.field.size_limit and str(self.size_limit*1024) or '0',
             sim_upload_limit        = str(self.field.sim_upload_limit),
@@ -377,6 +347,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         return 'multi-file-%s' % self.name.replace('.', '-')
         #return self.get_uploader_function_id()
 
+    # TODO:  Try to eliminate this method
     def get_uploader_function_id(self):
         """Returns a suitable id used to name javascript functions.
         """
@@ -418,6 +389,9 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         draftValue = zope.component.getMultiAdapter(
             (self.context, self.field), interfaces.IDataManager).query()
 
+        if draftValue is None:
+            return interfaces.NO_VALUE
+
         for idx in range(len(draftValue)):
             widget = self.getWidget(idx)
             append(draftValue[idx])
@@ -427,7 +401,12 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         return values
 
 
+from zope.component import adapter
+from z3c.form.interfaces import IFormLayer
+from plone.formwidget.multifile.interfaces import IMultiFileField
 @implementer(IFieldWidget)
+#@adapter(INamedFileField, IFormLayer)
+@adapter(IMultiFileField, IFormLayer)
 def MultiFileFieldWidget(field, request):
     return FieldWidget(field, MultiFileWidget(request))
 

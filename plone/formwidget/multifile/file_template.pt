@@ -20,11 +20,11 @@
     <tal:EDITABLE tal:condition="options/editable">
       <span class="discreet">
         &mdash;
-        <a href="" class="multi-file-remove-file"
-           i18n:translate="link_remove_file">remove me</a>
-        <!--a tal:attributes="href options/remove_url"
+        <!--a href="" class="multi-file-remove-file"
+           i18n:translate="link_remove_file">remove</a-->
+        <a tal:attributes="href options/remove_url"
            class="multi-file-remove-file"
-           i18n:translate="link_remove_file">remove me</a-->
+           i18n:translate="link_remove_file">remove</a>
       </span>
 
       <!--input type="hidden"

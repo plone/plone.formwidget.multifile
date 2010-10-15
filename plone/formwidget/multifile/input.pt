@@ -1,36 +1,6 @@
 
 <tal:WIDGET tal:define="portal_url view/better_context/portal_url">
 
-  <!--script src="jquery.uploadify.js"
-          type="text/javascript"
-          tal:attributes="src string:$portal_url/++resource++jquery.uploadify.js">
-  </script>
-  <script src="jquery.uploadify.js"
-          type="text/javascript"
-          tal:attributes="src string:$portal_url/++resource++uploadify.swfobject.js">
-  </script-->
-  <script src="multifile.js"
-          type="text/javascript"
-          tal:attributes="src string:$portal_url/++resource++multifile.js">
-  </script>
-  <!--link href="uploadify.css"
-        rel="stylesheet"
-        type="text/css"
-        tal:attributes="href string:$portal_url/++resource++uploadify.css" /-->
-
-  <!--div class="multi-file">
-    <ul class="multi-file-files">
-      <li tal:repeat="html view/get_data"
-          tal:replace="structure html" />
-    </ul>
-    <input type="hidden" tal:replace="structure view/counterMarker" />
-  </div-->
-
-  <!-- uploadify javascript -->
-  <!--script type="text/javascript"
-          tal:content="structure view/get_inline_js">
-  </script-->
-
 <div class="quick-uploader"
      i18n:domain="collective.quickupload">
 
@@ -42,61 +12,47 @@
         Files Quick Upload
       </h4-->
 
-      <!-- label -->
-      <!--label i18n:translate="label_choose_your_files"
-             id="label-upload">Choose your files : </label-->
+    <!-- label -->
+    <!--label i18n:translate="label_choose_your_files"
+           id="label-upload">Choose your files : </label-->
 
-      <div class="multi-file">
-        <ul tal:attributes="id view/get_file_list_id"
-            class="multi-file-files">
-          <li tal:repeat="html view/get_data"
-              tal:replace="structure html" />
-        </ul>
-        <!--input type="hidden" tal:replace="structure view/counterMarker" /-->
-      </div>
+    <div class="multi-file">
+      <ul tal:attributes="id view/get_file_list_id"
+          class="multi-file-files">
+        <li tal:repeat="html view/get_data"
+            tal:replace="structure html" />
+      </ul>
+      <!--input type="hidden" tal:replace="structure view/counterMarker" /-->
+    </div>
 
       <!-- Upload button and drag/drop zone -->
-      <div tal:attributes="id view/get_uploader_id;
-                          ref view/name"
-           tal:omit-tag="not:view/editing"
-           class="main-uploader">
+    <div tal:attributes="id view/get_uploader_id;
+                        ref view/name"
+         tal:omit-tag="not:view/editing"
+         class="main-uploader">
 
-           <div class="qq-uploader">
+         <div class="qq-uploader">
            <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>
            <div class="qq-upload-button">Browse for a file</div>
            <ul class="qq-upload-list"></ul>
-           </div>
+         </div>
 
-           </div>
+    </div>
 
       <!-- uploader comes here -->
       <!--div id="uploader"
            class="main-uploader"
            tal:attributes="id uploader_id"></div-->
 
-      <!-- upload button -->
-      <input type="hidden"
-             id="uploadify_label_file_title"
-             i18n:domain="plone"
-             i18n:attributes="value Title" />
-      <div class="uploadifybuttons">
-        <input type="button"
-               id="uploadify-upload"
-               class="context uploadifybutton"
-               value="Upload Files"
-               i18n:attributes="value label_upload_files"
-               tal:attributes="onclick string:sendDataAndUpload_${uploader_id}()" />
-        <input type="button"
-               id="uploadify-clear-queue"
-               class="context uploadifybutton"
-               value="Clear Queue"
-               i18n:attributes="value label_clear_queue"
-               tal:attributes="onclick string:clearQueue_${uploader_id}()" />
-      </div>
-    </div>
+    <input type="hidden"
+           id="uploadify_label_file_title"
+           i18n:domain="plone"
+           i18n:attributes="value Title" />
+  </div>
+
     <!-- uploadify javascript -->
-    <script type="text/javascript"
+  <script type="text/javascript"
           tal:content="structure view/get_inline_js">
-    </script>
+  </script>
 </div>
 </tal:WIDGET>

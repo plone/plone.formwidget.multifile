@@ -14,10 +14,15 @@ class IMultiFileWidget(IMultiWidget):
     """
 
 
-class IMultiFile(IObject):
+class IMultiFileField(IObject):
     """
     Additional Fields for Multifile
     """
+    multi = Bool( title=_(u"title_multi", default=u"Allow Multiple File Uploads"),
+                  description=_(u"description_multi", default=u"Allow multiple file uploads if True, or only one file if False"),
+                  default=True,
+                  required=False)
+
     use_flashupload = Bool(title=_(u"title_use_flashupload", default=u"Use Flash Upload"),
                            description=_(u"description_use_flashupload",
                                           default=u"By default, the upload script is a javascript only tool. "

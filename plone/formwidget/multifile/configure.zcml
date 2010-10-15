@@ -9,6 +9,8 @@
   <!-- Include our dependencies -->
   <includeDependencies package="." />
 
+  <adapter factory=".widget.MultiFileFieldWidget" />
+
   <zope:view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for=".interfaces.IMultiFileWidget"
