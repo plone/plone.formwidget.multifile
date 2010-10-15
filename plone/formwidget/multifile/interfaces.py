@@ -1,23 +1,18 @@
+from zope.interface import Interface
+from zope.schema import Bool, Int, Text
+from zope.schema.interfaces import IObject
+
 from plone.namedfile.field import NamedFile
 from plone.app.drafts.interfaces import IDraft
+
+from z3c.form.i18n import MessageFactory as _
 from z3c.form.interfaces import IMultiWidget
-from zope.interface import Interface
 
 
 class IMultiFileWidget(IMultiWidget):
     """Marker interface for the multi file widget.
     """
 
-#from zope.interface import Interface, implements
-#from zope.component import adapts
-from zope.schema import Bool, Int, Text
-#from Products.CMFDefault.formlib.schema import SchemaAdapterBase
-#from Products.CMFPlone.interfaces import IPloneSiteRoot
-#from Products.CMFCore.utils import getToolByName
-#from zope.formlib.form import FormFields
-#from plone.app.controlpanel.form import ControlPanelForm
-from z3c.form.i18n import MessageFactory as _
-from zope.schema.interfaces import IObject
 
 class IMultiFile(IObject):
     """
@@ -32,17 +27,6 @@ class IMultiFile(IObject):
                                           "but has many problems : don't work in https, don't work behind HTTP Authentication ..."),
                            default=False,
                            required=False)
-    auto_upload = Bool(title=_(u"title_auto_upload", default=u"Automatic upload on select"),
-                                 description=_(u"description_auto_upload", default=u"Check if you want to start the files upload on select, without submit the form. "
-                                                "Note that you cannot choose file titles "
-                                                "with this option set to True."),
-                                 default=False,
-                                 required=False)
-    fill_titles = Bool(title=_(u"title_fill_titles", default=u"Fill title before upload"),
-                                 description=_(u"description_fill_titles", default=u"If checked, you can fill the files titles "
-                                                "before upload. Uncheck if you don't need titles."),
-                                 default=True,
-                                 required=False)
 
     size_limit = Int( title=_(u"title_size_limit", default=u"Size limit"),
                       description=_(u"description_size_limit", default=u"Size limit for each file in KB, 0 = no limit"),

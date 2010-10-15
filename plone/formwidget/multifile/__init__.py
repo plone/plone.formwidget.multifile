@@ -18,24 +18,18 @@ class MultiFile(List):
     implements(IMultiFile)
 
     use_flashupload = False
-    auto_upload = True
-    fill_titles = False
     size_limit = 0
     sim_upload_limit = 1
     allowable_file_extensions = u"*.*;"
 
     def __init__(self,
         use_flashupload=False,
-        auto_upload=True,
-        fill_titles=False,
         size_limit=0,
         sim_upload_limit=1,
         allowable_file_extensions=u"*.*;",
         **kw
     ):
         self.use_flashupload = use_flashupload
-        self.auto_upload = auto_upload
-        self.fill_titles = fill_titles
         self.size_limit = size_limit
         self.sim_upload_limit = sim_upload_limit
         self.allowable_file_extensions = allowable_file_extensions
