@@ -9,6 +9,8 @@
   <!-- Include our dependencies -->
   <includeDependencies package="." />
 
+  <include package=".kss" />
+
   <adapter factory=".widget.MultiFileFieldWidget" />
 
   <zope:view

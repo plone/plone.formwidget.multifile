@@ -31,6 +31,7 @@ setup(name='plone.formwidget.multifile',
         'plone.z3cform',
         'plone.namedfile',
         'plone.formwidget.namedfile',
+        'plone.app.kss',
         'plone.app.drafts',
         'simplejson',
         # -*- Extra requirements: -*-

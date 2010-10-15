@@ -18,7 +18,7 @@
 
     <div class="multi-file">
       <ul tal:attributes="id view/get_file_list_id"
-          class="multi-file-files">
+            class="multi-file-files kssattr-filelistid">
         <li tal:repeat="html view/get_data"
             tal:replace="structure html" />
       </ul>

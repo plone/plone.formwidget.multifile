@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:kss="http://namespaces.zope.org/kss">
+
+    <!-- Inline validation -->
+    <browser:page
+        name="multifile_remove"
+        for="*"
+        class=".remove.MultifileRemove"
+        attribute="remove"
+        permission="zope2.View"
+        />
+
+</configure>

@@ -35,6 +35,8 @@ logger = logging.getLogger('plone.formwidget.multifile')
 # - Display errors in flash upload on error
 # - Add option to allow multi or not (incase developer just wants to use
 #   image ajax for preview
+# - if multi is true, disable browse button allwoing one 1 image
+# - add number of files max; size; etc and disable button on max
 # ------------------------------------------------------------------------------
 # BUGS
 # ------------------------------------------------------------------------------
@@ -216,6 +218,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
                    'widget': self,
                    'editable': self.mode == 'input',
                    'remove_url': remove_url,
+                   'kssattrs': 'kssattr-fileindex-%s kssattr-filename-%s' % (index, encode(file_.filename)),
                    }
 
         return self.file_template(**options)

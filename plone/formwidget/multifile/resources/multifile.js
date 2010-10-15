@@ -1,10 +1,10 @@
 /** *
  * JQuery Helpers for Plone Quick Upload
- *   
- */    
+ *
+ */
 
 var MultiFileUpload = {};
-    
+
 /*
 MultiFileUpload.addUploadFields = function(uploader, domelement, file, id, fillTitles) {
     if (fillTitles)  {
@@ -50,7 +50,7 @@ MultiFileUpload.sendDataAndUpload = function(uploader, domelement, typeupload) {
         // if file is null for any reason jq block is no more here
         else missing++;
     }
-}    
+}
 */
 
 MultiFileUpload.onAllUploadsComplete = function(){
@@ -68,21 +68,21 @@ MultiFileUpload.clearQueue = function(uploader, domelement) {
         jQuery('.qq-upload-list li', domelement).remove();
         handler._files = [];
         if (typeof handler._inputs != 'undefined') handler._inputs = {};
-    }    
-}    
+    }
+}
 */
 
 MultiFileUpload.onUploadComplete = function(uploader, domelement, id, fileName, responseJSON) {
     var uploadList = jQuery('.qq-upload-list', domelement);
-    if (responseJSON.success) {        
+    if (responseJSON.success) {
         window.setTimeout( function() {
             jQuery(uploader._getItemByFileId(id)).remove();
             // after the last upload, if no errors, reload the page
             var newlist = jQuery('li', uploadList);
-            if (! newlist.length) window.setTimeout( MultiFileUpload.onAllUploadsComplete, 5);       
+            if (! newlist.length) window.setTimeout( MultiFileUpload.onAllUploadsComplete, 5);
         }, 50);
     }
-    
+
 }
 
 /*
@@ -101,6 +101,7 @@ function multifile_uploadify_response(event, ID, fileObj, response, data) {
 }
 */
 
+/*
 jq(
   function($) {
     $('.multi-file-remove-file').live('click',
@@ -111,3 +112,4 @@ jq(
       });
   }
 );
+*/

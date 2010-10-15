@@ -1,5 +1,5 @@
-from zope.interface import implements
 import zope.i18nmessageid
+from zope.interface import implements
 from zope.schema import List
 
 from plone.formwidget.multifile.widget import MultiFileWidget
@@ -8,6 +8,10 @@ from plone.formwidget.multifile.widget import MultiFileFieldWidget
 MultiFileFieldWidget
 
 from plone.formwidget.multifile.interfaces import IMultiFileField
+
+
+MessageFactory = zope.i18nmessageid.MessageFactory(
+    'plone.formwidget.multifile')
 
 
 class MultiFileField(List):
@@ -38,8 +42,3 @@ class MultiFileField(List):
         self.allowable_file_extensions = allowable_file_extensions
 
         super(MultiFileField, self).__init__(**kw)
-
-
-MessageFactory = zope.i18nmessageid.MessageFactory(
-    'plone.formwidget.multifile')
-

@@ -1,6 +1,6 @@
 <tal:i18n i18n:domain="plone.formwidget.multifile">
 
-  <li class="multi-file-file">
+  <li tal:attributes="class string:multi-file-file ${options/kssattrs}">
 
     <img tal:condition="options/icon" src="" alt=""
          tal:attributes="src options/icon"/>
@@ -22,8 +22,15 @@
         &mdash;
         <!--a href="" class="multi-file-remove-file"
            i18n:translate="link_remove_file">remove</a-->
-        <a tal:attributes="href options/remove_url"
-           class="multi-file-remove-file"
+        <!--a tal:attributes="href options/remove_url"
+           class="multifileremove kssattr-index"
+           i18n:translate="link_remove_file">remove</a-->
+        <!--a href=""
+           class="multifileremove kssattr-index-0"
+           tal:attributes="class string:${options/class}"
+           i18n:translate="link_remove_file">remove</a-->
+        <a href=""
+           class="multifileremove"
            i18n:translate="link_remove_file">remove</a>
       </span>
 
