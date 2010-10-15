@@ -162,6 +162,11 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     display_template = ViewPageTemplateFile('display.pt')
     file_template = ViewPageTemplateFile('file_template.pt')
 
+    # Used to cache self.value list in a dictionary format and map to
+    # allow lookup by filename, not index
+    valueDictionary = None
+    valueMap = None
+
     def __init__(self, request):
         super(z3c.form.browser.multi.MultiWidget, self).__init__(request)
         self.request.form.update(decodeQueryString(request.get('QUERY_STRING','')))
@@ -201,10 +206,11 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         value = 'index:%i' % index
         view_name = self.name[len(self.form.prefix):]
         view_name = view_name[len(self.form.widgets.prefix):]
-        download_url = '%s/++widget++%s/%i/@@download/%s' % (
+        download_url = '%s/++widget++%s/%s/@@download/%s' % (
             self.request.getURL(),
             view_name,
-            index,
+            #index,
+            file_.filename,
             file_.filename
             )
 
@@ -365,7 +371,18 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         return 'multi_file_%s' % self.name.replace('.', '_')
 
     def publishTraverse(self, request, name):
-        widget = self.widgets[int(name)].__of__(self.better_context)
+        # Need to convert the list into a dictionary so we can lookup by filename
+        # since delete removes items from list, and browser index could be
+        # incorrent
+        if self.valueDictionary is None:
+            self.valueDictionary = {}
+            self.valueMap = {}
+            for index, value in enumerate(self.value):
+                self.valueDictionary[value.filename] = value
+                self.valueMap[value.filename] = index
+
+        widget = self.widgets[self.valueMap.get(name)].__of__(self.better_context)
+
         # fix some stuff, according to z3c.form.field.FieldWidgets.update
         widget.name = self.name + '.' + name
         widget.__name__ = name
@@ -380,12 +397,14 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         # we need to be able to do something like
         # getattr(widget.context, widget.field.__name__)
         # and it should return the value
-
-        class objectish_list(list):
+        class objectish_dict(dict):
             def __getattr__(self, k):
-                return self[int(k)]
+                value = self.get(k)
+                if value is None:
+                    raise ValueError('invalid key')
+                return value
 
-        widget.context = objectish_list(self.value)
+        widget.context = objectish_dict(self.valueDictionary)
 
         return widget
 
