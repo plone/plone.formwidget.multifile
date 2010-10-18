@@ -1,6 +1,37 @@
 """Contains the inline javascript MultiFile widget requires for flash and
 ajax uploads"""
 
+DELETE = """
+    jQuery(document).ready(function() {
+        bindDelete = function(scope) {
+          $('.multifiledelete', scope).click(function(event) {
+            event.preventDefault();
+
+            // TODO:  Add a spinner
+            var delete_anchor = $(this).html('%(delete_message)s');
+
+            // Ajax request
+            $.ajax({
+                type     : "POST",
+                url      : "%(delete_url)s",
+                data     : {filename: $(this).closest('li.multi-file-file').find('a .filename').html()},
+                dataType : "json",
+                success  : function(responseJSON){
+                    if(responseJSON.success) {
+                        $(delete_anchor).closest('li.multi-file-file').remove();
+                        $('#content').before($(document.createElement('dl')).html(responseJSON.html).attr('class', 'portalMessage info'));
+                    } else {
+                        $(delete_anchor).html('Error');
+                        $('#content').before($(document.createElement('dl')).html(responseJSON.html).attr('class', 'portalMessage error'));
+                    }
+                }
+            });
+          });
+        }
+        bindDelete(this);
+    });
+"""
+
 FLASH_UPLOAD_JS = """
     jQuery(document).ready(function() {
         jQuery('#%(name)s').uploadify({
@@ -29,7 +60,9 @@ FLASH_UPLOAD_JS = """
                 // TODO:  Do something to indicate the error
                 if( response.error ) { return false; }
 
-                jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(response.html).attr('class', 'multi-file-file'));
+                var newLi = $(response.html);
+                bindDelete(newLi);
+                jQuery('#%(file_list_id)s').append(newLi);
             },
         });
     });
@@ -45,9 +78,10 @@ XHR_UPLOAD_JS = """
             cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
 
             onComplete: function (id, filename, responseJSON) {
-                    jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(responseJSON.html).attr('class', 'multi-file-file'));
-                    //var e = document.getElementById('form-widgets-%(field_name)s-count');
-                    //e.setAttribute('value', responseJSON.counter);
+                var newLi = $(responseJSON.html);
+                bindDelete(newLi);
+                jQuery('#%(file_list_id)s').append(newLi);
+
                 var uploader = xhr_%(id)s;
                 MultiFileUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
             },
@@ -55,11 +89,11 @@ XHR_UPLOAD_JS = """
             allowedExtensions: %(file_extensions_list)s,
             sizeLimit: %(xhr_size_limit)s,
             simUploadLimit: %(sim_upload_limit)s,
-            template: '<div class="qq-uploader">' +
-                      '<div class="qq-upload-drop-area"><span>%(draganddrop_text)s</span></div>' +
-                      '<div class="qq-upload-button">%(button_text)s</div>' +
-                      '<ul class="qq-upload-list"></ul>' +
-                      '</div>',
+            //template: '<div class="qq-uploader">' +
+            //          '<div class="qq-upload-drop-area"><span>%(draganddrop_text)s</span></div>' +
+            //          '<div class="qq-upload-button">%(button_text)s</div>' +
+            //          '<ul class="qq-upload-list"></ul>' +
+            //          '</div>',
             fileTemplate: '<li>' +
                     '<a class="qq-upload-cancel" href="#">&nbsp;</a>' +
                     '<div class="qq-upload-infos"><span class="qq-upload-file"></span>' +

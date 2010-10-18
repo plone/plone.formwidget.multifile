@@ -1,6 +1,6 @@
 <tal:i18n i18n:domain="plone.formwidget.multifile">
 
-  <li tal:attributes="class string:multi-file-file ${options/kssattrs}">
+  <li class="multi-file-file">
 
     <img tal:condition="options/icon" src="" alt=""
          tal:attributes="src options/icon"/>

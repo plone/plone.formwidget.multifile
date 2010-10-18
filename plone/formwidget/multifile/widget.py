@@ -23,7 +23,7 @@ from plone.dexterity.i18n import MessageFactory as _
 from plone.app.drafts.interfaces import IDraftable
 
 from plone.formwidget.multifile.interfaces import IMultiFileField
-from plone.formwidget.multifile.inlinejavascript import FLASH_UPLOAD_JS, XHR_UPLOAD_JS
+#from plone.formwidget.multifile.inlinejavascript import FLASH_UPLOAD_JS, XHR_UPLOAD_JS
 from plone.formwidget.multifile.utils import encode, decodeQueryString
 
 
@@ -57,6 +57,15 @@ from plone.formwidget.multifile.utils import encode, decodeQueryString
 # - IE8 displays a blank <li> item in between each upload
 # ------------------------------------------------------------------------------
 
+def getFlashInlineJavascript():
+    # DEBUG:  import each time to make sure we get debugging changes
+    from plone.formwidget.multifile.inlinejavascript import DELETE, FLASH_UPLOAD_JS
+    return DELETE + FLASH_UPLOAD_JS
+
+def getXHRInlineJavascript():
+    # DEBUG:  import each time to make sure we get debugging changes
+    from plone.formwidget.multifile.inlinejavascript import DELETE, XHR_UPLOAD_JS
+    return DELETE + XHR_UPLOAD_JS
 
 class MultiFileWidget(multi.MultiWidget):
     implements(IMultiFileWidget, IPublishTraverse, IDraftable)
@@ -122,7 +131,6 @@ class MultiFileWidget(multi.MultiWidget):
                    'download_url': download_url,
                    'widget': self,
                    'editable': self.mode == 'input',
-                   'kssattrs': 'kssattr-fileindex-%s kssattr-filename-%s' % (index, encode(file_.filename)),
                    }
 
         return self.file_template(**options)
@@ -134,9 +142,11 @@ class MultiFileWidget(multi.MultiWidget):
     def get_inline_js(self):
         settings = self.upload_settings()
         if self.field.use_flashupload:
-            return FLASH_UPLOAD_JS % settings
+            #return FLASH_UPLOAD_JS % settings
+            return getFlashInlineJavascript() % settings
         else:
-            return XHR_UPLOAD_JS % settings
+            #return XHR_UPLOAD_JS % settings
+            return getXHRInlineJavascript() % settings
 
     def content_types_infos(self, allowable_file_extensions):
         """
@@ -195,9 +205,12 @@ class MultiFileWidget(multi.MultiWidget):
         else:
             action_url = urllib.quote(widgetURL + '/@@multifile_upload_file')
 
+        delete_url = urllib.quote(widgetURL + '/@@multifile_delete')
+
         settings = dict(
             multi                   = self.field.multi and 'true' or 'false',
             action_url              = action_url,
+            delete_url              = delete_url,
             field_name              = self.field.__name__,
             ticket                  = ticket,
             portal_url              = portal_url,
@@ -211,6 +224,7 @@ class MultiFileWidget(multi.MultiWidget):
             xhr_size_limit          = self.field.size_limit and str(self.size_limit * 1024) or '0',
             sim_upload_limit        = str(self.field.sim_upload_limit),
             button_text             = _(u'Browse'),
+            delete_message          = _(u'Deleting... Please Wait.'),
             draganddrop_text        = _(u'Drag and drop files to upload'),
             msg_all_sucess          = _(u'All files uploaded with success.'),
             msg_some_sucess         = _(u' files uploaded with success, '),

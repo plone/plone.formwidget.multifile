@@ -9,8 +9,6 @@
   <!-- Include our dependencies -->
   <includeDependencies package="." />
 
-  <include package=".kss" />
-
   <adapter factory=".widget.MultiFileFieldWidget" />
 
   <zope:view
@@ -40,6 +38,13 @@
       attribute="multifile_flash_upload_file"
       class=".upload.UploadFile"
       permission="zope.Public"/>
+
+  <browser:page
+      for=".interfaces.IMultiFileWidget"
+      name="multifile_delete"
+      attribute="multifile_delete"
+      class=".delete.DeleteFile"
+      permission="cmf.AddPortalContent"/>
 
   <!-- Quick Upload check file -->
 
