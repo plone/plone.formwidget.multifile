@@ -12,17 +12,17 @@ from kss.core import kssaction
 
 from z3c.form.i18n import MessageFactory as _
 
-from plone.formwidget.multifile.widget import decode
+from plone.formwidget.multifile.utils import decode
 from plone.app.z3cformdrafts.drafting import Z3cFormDraftProxy
 
 
 class MultifileRemove(PloneKSSView):
-    """KSS actions for multifile remove actions
+    """KSS actions for multifile delete actions
     """
 
     @kssaction
-    def remove(self, formname, fieldname, filelistid, fileindex, filename):
-        """Remove a file from the multifile draft
+    def delete(self, formname, fieldname, filelistid, fileindex, filename):
+        """Delete a file from the multifile draft
         """
         context = aq_inner(self.context)
         request = aq_inner(self.request)
@@ -46,10 +46,10 @@ class MultifileRemove(PloneKSSView):
         kssplone = self.getCommandSet('plone')
 
         # Put in a function, so it will not cache (for testing)
-        remove(raw_fieldname, filelistid, filename, fileindex, widget, ksscore, kssplone)
+        delete(raw_fieldname, filelistid, filename, fileindex, widget, ksscore, kssplone)
 
 
-def remove(fieldname, filelistid, filename, fileindex, widget, ksscore, kssplone):
+def delete(fieldname, filelistid, filename, fileindex, widget, ksscore, kssplone):
     """Just used to test logic out since it will not be cached like class
     above!"""
 

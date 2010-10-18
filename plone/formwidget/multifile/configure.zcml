@@ -31,14 +31,14 @@
       for=".interfaces.IMultiFileWidget"
       name="multifile_upload_file"
       attribute="multifile_upload_file"
-      class=".widget.UploadFile"
+      class=".upload.UploadFile"
       permission="cmf.AddPortalContent"/>
 
   <browser:page
       for=".interfaces.IMultiFileWidget"
       name="multifile_flash_upload_file"
       attribute="multifile_flash_upload_file"
-      class=".widget.UploadFile"
+      class=".upload.UploadFile"
       permission="zope.Public"/>
 
   <!-- Quick Upload check file -->
@@ -46,7 +46,7 @@
   <browser:page
       for=".interfaces.IMultiFileWidget"
       name="multifile_check_file"
-      class=".widget.CheckFile"
+      class=".upload.CheckFile"
       permission="cmf.AddPortalContent"/>
 
   <!-- ticket view which generate a ticket for each user/folder absolute url

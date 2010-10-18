@@ -5,10 +5,10 @@
 
     <!-- Inline validation -->
     <browser:page
-        name="multifile_remove"
+        name="multifile_delete"
         for="*"
-        class=".remove.MultifileRemove"
-        attribute="remove"
+        class=".delete.MultifileRemove"
+        attribute="delete"
         permission="zope2.View"
         />
 

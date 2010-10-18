@@ -1,4 +1,7 @@
 from zope.publisher.interfaces import NotFound
+
+from ZPublisher.HTTPRequest import HTTPRequest
+
 from Products.CMFCore.utils import getToolByName
 
 
@@ -20,3 +23,29 @@ def get_icon_for(context, file_):
         except (NotFound, KeyError, AttributeError):
             pass
     return context.getIcon()
+
+
+def decodeQueryString(QueryString):
+    """decode *QueryString* into a dictionary, as ZPublisher would do"""
+    r = HTTPRequest(None,
+                    {'QUERY_STRING' : QueryString,
+                     'SERVER_URL' : '',
+                     },
+                    None,
+                    1)
+    r.processInputs()
+    return r.form
+
+
+def encode(s):
+    """ encode string
+    """
+
+    return "d".join(map(str, map(ord, s)))
+
+
+def decode(s):
+    """ decode string
+    """
+
+    return "".join(map(chr, map(int, s.split("d"))))

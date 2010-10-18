@@ -2,17 +2,16 @@
  * Multifile Remove
  */
 
-a.multifileremove:click {
+a.multifiledelete:click {
     evt-click-preventdefault: True;
 
     action-client: replaceInnerHTML;
-    replaceInnerHTML-html: "Removing. Please Wait...";
+    replaceInnerHTML-html: "Deleting file... Please Wait.";
 
-    action-server: multifile_remove;
-
-    multifile_remove-formname:      kssAttr('formname', true);
-    multifile_remove-fieldname:     kssAttr('fieldname', true);
-    multifile_remove-fileindex:     kssAttr('fileindex', true);
-    multifile_remove-filename:      kssAttr('filename', true);
-    multifile_remove-filelistid:    nodeAttr('id', true);
+    action-server: multifile_delete;
+    multifile_delete-formname:      kssAttr('formname', true);
+    multifile_delete-fieldname:     kssAttr('fieldname', true);
+    multifile_delete-fileindex:     kssAttr('fileindex', true);
+    multifile_delete-filename:      kssAttr('filename', true);
+    multifile_delete-filelistid:    nodeAttr('id', true);
 }

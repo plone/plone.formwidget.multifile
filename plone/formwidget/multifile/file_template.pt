@@ -20,18 +20,9 @@
     <tal:EDITABLE tal:condition="options/editable">
       <span class="discreet">
         &mdash;
-        <!--a href="" class="multi-file-remove-file"
-           i18n:translate="link_remove_file">remove</a-->
-        <!--a tal:attributes="href options/remove_url"
-           class="multifileremove kssattr-index"
-           i18n:translate="link_remove_file">remove</a-->
-        <!--a href=""
-           class="multifileremove kssattr-index-0"
-           tal:attributes="class string:${options/class}"
-           i18n:translate="link_remove_file">remove</a-->
         <a href=""
-           class="multifileremove"
-           i18n:translate="link_remove_file">remove</a>
+           class="multifiledelete"
+           i18n:translate="link_delete_file">delete</a>
       </span>
 
       <!--input type="hidden"

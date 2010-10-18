@@ -1,25 +1,31 @@
-from Products.Five.browser import BrowserView
-from Acquisition import aq_inner, aq_parent
-from plone.formwidget.multifile.interfaces import IMultiFileWidget
-from plone.formwidget.multifile.utils import get_icon_for
-from z3c.form.interfaces import IFieldWidget, IDataConverter
-from z3c.form.widget import FieldWidget
-from z3c.form.widget import MultiWidget
-from zope.app.component.hooks import getSite
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.browser.interfaces import IBrowserView
-from zope.interface import implements, implementer
-from zope.publisher.interfaces import IPublishTraverse
-from zope.component import queryMultiAdapter
+import urllib
 
-from z3c.form import interfaces
-from z3c.form.i18n import MessageFactory as _
-from operator import attrgetter
+from Acquisition import aq_inner
 
 import zope.component
+from zope.component import adapter
 
-import logging
-logger = logging.getLogger('plone.formwidget.multifile')
+from zope.app.component.hooks import getSite
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.interface import implements, implementer
+from zope.publisher.interfaces import IPublishTraverse
+
+from plone.formwidget.multifile.interfaces import IMultiFileWidget
+from plone.formwidget.multifile.utils import get_icon_for
+
+from z3c.form import interfaces
+from z3c.form.browser import multi
+from z3c.form.widget import FieldWidget
+from z3c.form.i18n import MessageFactory as _
+
+from plone.dexterity.i18n import MessageFactory as _
+
+from plone.app.drafts.interfaces import IDraftable
+
+from plone.formwidget.multifile.interfaces import IMultiFileField
+from plone.formwidget.multifile.inlinejavascript import FLASH_UPLOAD_JS, XHR_UPLOAD_JS
+from plone.formwidget.multifile.utils import encode, decodeQueryString
+
 
 # ------------------------------------------------------------------------------
 # TODO
@@ -52,108 +58,7 @@ logger = logging.getLogger('plone.formwidget.multifile')
 # ------------------------------------------------------------------------------
 
 
-def encode(s):
-    """ encode string
-    """
-
-    return "d".join(map(str, map(ord, s)))
-
-def decode(s):
-    """ decode string
-    """
-
-    return "".join(map(chr, map(int, s.split("d"))))
-
-FLASH_UPLOAD_JS = """
-    jQuery(document).ready(function() {
-        jQuery('#%(name)s').uploadify({
-            'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
-            'script'        : '%(action_url)s',
-            'fileDataName'  : 'qqfile',
-            'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
-            'folder'        : '%(physical_path)s',
-            'auto'          : true,
-            'multi'         : %(multi)s,
-            'simUploadLimit': %(sim_upload_limit)s,
-            'sizeLimit'     : '%(size_limit)s',
-            'fileDesc'      : '%(file_description)s',
-            'fileExt'       : '%(file_extensions)s',
-            'buttonText'    : '%(button_text)s',
-            'scriptAccess'  : 'sameDomain',
-            'hideButton'    : false,
-            'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
-            'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
-                try{
-                    response = jQuery.parseJSON( responseJSON );
-                } catch(err){
-                    return false;
-                }
-
-                // TODO:  Do something to indicate the error
-                if( response.error ) { return false; }
-
-                jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(response.html).attr('class', 'multi-file-file'));
-            },
-        });
-    });
-"""
-
-XHR_UPLOAD_JS = """
-    createUploader_%(id)s= function(){
-        xhr_%(id)s = new qq.FileUploader({
-            element: jQuery('#%(name)s')[0],
-            action: '%(action_url)s',
-            autoUpload: true,
-            multi: %(multi)s,
-            cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
-
-            onComplete: function (id, filename, responseJSON) {
-                    jQuery('#%(file_list_id)s').append(jQuery(document.createElement('li')).html(responseJSON.html).attr('class', 'multi-file-file'));
-                    //var e = document.getElementById('form-widgets-%(field_name)s-count');
-                    //e.setAttribute('value', responseJSON.counter);
-                var uploader = xhr_%(id)s;
-                MultiFileUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
-            },
-
-            allowedExtensions: %(file_extensions_list)s,
-            sizeLimit: %(xhr_size_limit)s,
-            simUploadLimit: %(sim_upload_limit)s,
-            template: '<div class="qq-uploader">' +
-                      '<div class="qq-upload-drop-area"><span>%(draganddrop_text)s</span></div>' +
-                      '<div class="qq-upload-button">%(button_text)s</div>' +
-                      '<ul class="qq-upload-list"></ul>' +
-                      '</div>',
-            fileTemplate: '<li>' +
-                    '<a class="qq-upload-cancel" href="#">&nbsp;</a>' +
-                    '<div class="qq-upload-infos"><span class="qq-upload-file"></span>' +
-                    '<span class="qq-upload-spinner"></span>' +
-                    '<span class="qq-upload-failed-text">%(msg_failed)s</span></div>' +
-                    '<div class="qq-upload-size"></div>' +
-                '</li>',
-            messages: {
-                serverError: "%(error_server)s",
-                draftError: "%(error_draft)s",
-                serverErrorAlreadyExists: "%(error_already_exists)s {file}",
-                serverErrorZODBConflict: "%(error_zodb_conflict)s {file}, %(error_try_again)s",
-                serverErrorNoPermission: "%(error_no_permission)s",
-                typeError: "%(error_bad_ext)s {file}. %(error_onlyallowed)s {extensions}.",
-                sizeError: "%(error_file_large)s {file}, %(error_maxsize_is)s {sizeLimit}.",
-                emptyError: "%(error_empty_file)s {file}, %(error_try_again_wo)s"
-            }
-        });
-    }
-    jQuery(document).ready(createUploader_%(id)s);
-"""
-
-
-#from Acquisition import Explicit
-#class MultiFileWidget(Explicit, MultiWidget):
-#class MultiFileWidget(MultiWidget):
-import z3c.form.browser.multi
-from z3c.form import button
-from plone.app.drafts.interfaces import IDraftable
-from plone.dexterity.i18n import MessageFactory as _
-class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
+class MultiFileWidget(multi.MultiWidget):
     implements(IMultiFileWidget, IPublishTraverse, IDraftable)
 
     klass = u'multi-file-widget'
@@ -162,14 +67,9 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
     display_template = ViewPageTemplateFile('display.pt')
     file_template = ViewPageTemplateFile('file_template.pt')
 
-    # Used to cache self.value list in a dictionary format and map to
-    # allow lookup by filename, not index
-    valueDictionary = None
-    valueMap = None
-
     def __init__(self, request):
-        super(z3c.form.browser.multi.MultiWidget, self).__init__(request)
-        self.request.form.update(decodeQueryString(request.get('QUERY_STRING','')))
+        super(multi.MultiWidget, self).__init__(request)
+        self.request.form.update(decodeQueryString(request.get('QUERY_STRING', '')))
 
     @property
     def better_context(self):
@@ -189,8 +89,8 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         """
         """
         if self.value:
-            converter = IDataConverter(self)
-            converted_value = converter.toFieldValue(self.value)
+            #converter = IDataConverter(self)
+            #converted_value = converter.toFieldValue(self.value)
             for i, file_ in enumerate(self.value):
                 yield self.render_file(file_, index=i)
 
@@ -214,15 +114,6 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             file_.filename
             )
 
-        #form.widgets.imagelist.0.remove': u'1',
-        #form.widgets.imagelist.buttons.remove': u'Remove selected'
-        remove_url = '%s/++widget++%s/%i/@@download/%s' % (
-            self.request.getURL(),
-            view_name,
-            index,
-            file_.filename
-            )
-
         options = {'value': value,
                    'icon': '/'.join((context.portal_url(),
                                      get_icon_for(context, file_))),
@@ -231,7 +122,6 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
                    'download_url': download_url,
                    'widget': self,
                    'editable': self.mode == 'input',
-                   'remove_url': remove_url,
                    'kssattrs': 'kssattr-fileindex-%s kssattr-filename-%s' % (index, encode(file_.filename)),
                    }
 
@@ -248,13 +138,13 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         else:
             return XHR_UPLOAD_JS % settings
 
-    def content_types_infos (self, allowable_file_extensions):
+    def content_types_infos(self, allowable_file_extensions):
         """
         return some content types infos depending on allowable_file_extensions type
         allowable_file_extensions could be 'image', 'video', 'audio' or any
         extension like '*.doc'
         """
-        context = aq_inner(self.context)
+        #context = aq_inner(self.context)
         ext = '*.*;'
         extlist = []
         msg = _(u'Choose files to upload')
@@ -280,16 +170,14 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             extlist = [f.split('.')[1].strip() for f in ext.split(';') if f.strip()]
         except :
             extlist = []
-        if extlist==['*'] :
+        if extlist == ['*'] :
             extlist = []
 
-        return ( ext, extlist, msg)
-
+        return (ext, extlist, msg)
 
     def upload_settings(self):
         """Returns a dectionary contianing settings required for javascript
         """
-        from Products.PythonScripts.standard import url_quote
         context = aq_inner(self.better_context)
         request = self.request
         session = request.get('SESSION', {})
@@ -303,9 +191,9 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         requestURL = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
         widgetURL = requestURL + '/++widget++' + fieldName
         if self.field.use_flashupload:
-            action_url=url_quote(widgetURL + '/@@multifile_flash_upload_file')
+            action_url = urllib.quote(widgetURL + '/@@multifile_flash_upload_file')
         else:
-            action_url=url_quote(widgetURL + '/@@multifile_upload_file')
+            action_url = urllib.quote(widgetURL + '/@@multifile_upload_file')
 
         settings = dict(
             multi                   = self.field.multi and 'true' or 'false',
@@ -319,8 +207,8 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             id                      = self.get_uploader_function_id(),
             file_list_id            = self.get_file_list_id(),
             name                    = self.get_uploader_id(),
-            size_limit              = self.field.size_limit and str(self.size_limit*1024) or '',
-            xhr_size_limit          = self.field.size_limit and str(self.size_limit*1024) or '0',
+            size_limit              = self.field.size_limit and str(self.size_limit * 1024) or '',
+            xhr_size_limit          = self.field.size_limit and str(self.size_limit * 1024) or '0',
             sim_upload_limit        = str(self.field.sim_upload_limit),
             button_text             = _(u'Browse'),
             draganddrop_text        = _(u'Drag and drop files to upload'),
@@ -374,14 +262,14 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         # Need to convert the list into a dictionary so we can lookup by filename
         # since delete removes items from list, and browser index could be
         # incorrent
-        if self.valueDictionary is None:
-            self.valueDictionary = {}
-            self.valueMap = {}
-            for index, value in enumerate(self.value):
-                self.valueDictionary[value.filename] = value
-                self.valueMap[value.filename] = index
+        valueDictionary = {}
+        valueMap = {}
 
-        widget = self.widgets[self.valueMap.get(name)].__of__(self.better_context)
+        for index, value in enumerate(self.value):
+            valueDictionary[value.filename] = value
+            valueMap[value.filename] = index
+
+        widget = self.widgets[valueMap.get(name)].__of__(self.better_context)
 
         # fix some stuff, according to z3c.form.field.FieldWidgets.update
         widget.name = self.name + '.' + name
@@ -404,7 +292,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
                     raise ValueError('invalid key')
                 return value
 
-        widget.context = objectish_dict(self.valueDictionary)
+        widget.context = objectish_dict(valueDictionary)
 
         return widget
 
@@ -423,7 +311,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
             return interfaces.NO_VALUE
 
         for idx in range(len(draftValue)):
-            widget = self.getWidget(idx)
+            #widget = self.getWidget(idx)
             append(draftValue[idx])
         if len(values) == 0:
             # no multi value found
@@ -431,244 +319,7 @@ class MultiFileWidget(z3c.form.browser.multi.MultiWidget):
         return values
 
 
-from zope.component import adapter
-from z3c.form.interfaces import IFormLayer
-from plone.formwidget.multifile.interfaces import IMultiFileField
-@implementer(IFieldWidget)
-#@adapter(INamedFileField, IFormLayer)
-@adapter(IMultiFileField, IFormLayer)
+@implementer(interfaces.IFieldWidget)
+@adapter(IMultiFileField, interfaces.IFormLayer)
 def MultiFileFieldWidget(field, request):
     return FieldWidget(field, MultiFileWidget(request))
-
-# Additional imports
-try:
-    import json
-except:
-    import simplejson as json
-
-import os
-import mimetypes
-import random
-import urllib
-from Acquisition import aq_inner, aq_parent
-from AccessControl import SecurityManagement
-from ZPublisher.HTTPRequest import HTTPRequest
-
-from zope.security.interfaces import Unauthorized
-from zope.filerepresentation.interfaces import IFileFactory
-from zope.component import getUtility
-
-from Products.CMFCore.utils import getToolByName
-from Products.Five.browser import BrowserView
-from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
-from Products.ATContentTypes.interfaces import IImageContent
-from Products.CMFPlone.interfaces import IPloneSiteRoot
-from zope.app.container.interfaces import INameChooser
-from plone.i18n.normalizer.interfaces import IIDNormalizer
-
-from plone.app.z3cformdrafts.drafting import Z3cFormDraftProxy
-#import ticket as ticketmod
-#from collective.quickupload import siteMessageFactory as _
-#from collective.quickupload.browser.quickupload_settings import IQuickUploadControlPanel
-try :
-    # python 2.6
-    import json
-except :
-    # plone 3.3
-    import simplejson as json
-
-def decodeQueryString(QueryString):
-    """decode *QueryString* into a dictionary, as ZPublisher would do"""
-    r = HTTPRequest(None,
-                    {'QUERY_STRING' : QueryString,
-                     'SERVER_URL' : '',
-                     },
-                    None,
-                    1)
-    r.processInputs()
-    return r.form
-
-
-from ZPublisher.HTTPRequest import FileUpload
-class UploadFile(BrowserView):
-    """The ajax XHR calls this view for every file added interactively.
-    This view saves the file on a draft.  When the form is actually submitted
-    the widget gets the files from the draft and stores it in the actual target.
-    """
-
-    def __init__(self, context, request):
-        self.context = aq_inner(context)
-        self.request = request
-
-        # in some cases the context is the view, so lets walk up
-        # and search the real context
-        context = self.context
-        while IBrowserView.providedBy(context):
-            context = aq_parent(aq_inner(context))
-        self.widget = context
-
-        self.content = aq_inner(self.widget.context)
-
-        # FlashUpload does not authenicate properly, therefore a draft would
-        # not have been created yet, so we need to update the form which in
-        # turn will load the draft
-        if self.widget.field.use_flashupload:
-            self.request.set('__ac', decode(self.request.get('ticket')))
-            self.widget.form.update()
-            self.widget = self.widget.form.widgets[self.widget.field.__name__]
-            self.content = aq_inner(self.widget.context)
-
-    # Is this needed now since adapted uses attribute to call function?
-    def __call__(self):
-        #if self.widget.field.use_flashupload:
-        #    return self.multifile_flash_upload_file()
-        #else:
-        #    return self.multifile_upload_file()
-        return self.multifile_upload_file()
-
-    def multifile_flash_upload_file(self):
-        return self.multifile_upload_file()
-
-    def multifile_upload_file(self):
-        if not isinstance(self.content, Z3cFormDraftProxy):
-            logger.info("Draft does not exist; maybe user could not be authorized!")
-            return json.dumps({u'error': u'draftError'})
-
-        widget = self.widget
-        request = self.request
-        response = request.RESPONSE
-
-        response.setHeader('Expires', 'Sat, 1 Jan 2000 00:00:00 GMT')
-        response.setHeader('Cache-control', 'no-cache')
-        # the good content type woul be text/json or text/plain but IE
-        # do not support it
-        response.setHeader('Content-Type', 'text/html; charset=utf-8')
-
-        if request.HTTP_X_REQUESTED_WITH :
-            # using ajax upload
-            file_name = urllib.unquote(request.HTTP_X_FILE_NAME)
-            upload_with = "XHR"
-            try :
-                file = request.BODYFILE
-                file_data = file.read()
-                file.seek(0)
-            except AttributeError :
-                # in case of cancel during xhr upload
-                logger.info("Upload of %s has been aborted" %file_name)
-                # not really useful here since the upload block
-                # is removed by "cancel" action, but
-                # could be useful if someone change the js behavior
-                return  json.dumps({u'error': u'emptyError'})
-            except :
-                logger.info("Error when trying to read the file %s in request"  %file_name)
-                return json.dumps({u'error': u'serverError'})
-
-            try :
-                file_data = FileUpload(aFieldStorage = FieldStorageStub(file, {}, file_name))
-            except TypeError:
-                return json.dumps({u'error': u'serverError'})
-        elif not self.widget.field.use_flashupload:
-            # using classic form post method (MSIE<=8)
-            file_data = request.get("qqfile", None)
-            filename = getattr(file_data,'filename', '')
-            file_name = filename.split("\\")[-1]
-            upload_with = "CLASSIC FORM POST"
-            # we must test the file size in this case (no client test)
-            if not self._check_file_size(file_data) :
-                logger.info("Test file size : the file %s is too big, upload rejected" % file_name)
-                return json.dumps({u'error': u'sizeError'})
-        else:
-            # using flash upload
-            file_data = request.get("qqfile", None)
-            filename = getattr(file_data,'filename', '')
-            file_name = filename.split("\\")[-1]
-            upload_with = "FLASH"
-            #TODO: Implement CheckFile view (flash will use it to comfirm first)
-            # we must test the file size in this case (no client test)
-            #if not self._check_file_size(file_data) :
-            #    logger.info("Test file size : the file %s is too big, upload rejected" % file_name)
-            #    return json.dumps({u'error': u'sizeError'})
-
-        if not file_data:
-            return json.dumps({u'error': u'emptyError'})
-
-        if not self._check_file_id(widget, file_name) :
-            logger.info("The file id for %s already exists, upload rejected" % file_name)
-            return json.dumps({u'error': u'serverErrorAlreadyExists'})
-
-        logger.info("uploading file with %s : filename=%s" % (upload_with, file_name))
-
-        index = len(widget.value)
-        newWidget = widget.getWidget(index)
-        converter = IDataConverter(newWidget)
-        newWidget.value = converter.toFieldValue(file_data)
-
-        if newWidget.value is not None:
-            widget.value.append(newWidget.value)
-            widget.updateWidgets()
-            # Save on draft
-            dm = zope.component.getMultiAdapter(
-                (self.content, widget.field), interfaces.IDataManager)
-            dm.set(interfaces.IDataConverter(widget).toFieldValue(widget.value))
-
-            # TODO; need to create a url create function in widget
-            #logger.info("file url: %s" % newWidget.value.absolute_url())
-
-            # Reset requestURL so file URL will be rendered properly
-            request.URL = request.getURL()[0:(request.getURL().find('/', len(self.content.absolute_url())+1))]
-            responseJSON = {u'success'  : True,
-                            u'filename' : newWidget.filename,
-                            u'html'     : widget.render_file(newWidget.value, index=index),
-                            u'counter'  : len(widget.widgets),
-                        }
-        else :
-            responseJSON = {u'error': f['error']}
-
-        # If iframe was used; wrap the response in a <script> tag or will get json parse errors
-        if request.HTTP_X_REQUESTED_WITH or self.widget.field.use_flashupload:
-            return json.dumps(responseJSON)
-        else:
-            return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
-
-    def _check_file_size(self, data):
-        max_size = int(self.widget.field.size_limit)
-        if not max_size :
-            return 1
-        #file_size = len(data.read()) / 1024
-        data.seek(0, os.SEEK_END)
-        file_size = data.tell() / 1024
-        data.seek(0, os.SEEK_SET )
-        max_size = int(self.widget.field.size_limit)
-        if file_size<=max_size:
-            return 1
-        return 0
-
-    def _check_file_id(self, widget, filename):
-        for file_ in widget.value:
-            if file_.filename == filename:
-                return False
-        return True
-
-
-class FieldStorageStub:
-    """Used so we can create a FileUpload object
-    """
-    def __init__(self, file, headers={}, filename=''):
-        self.file = file
-        self.headers = headers
-        self.filename = filename
-
-
-class CheckFile(BrowserView):
-    """
-    check if file exists
-    """
-    def check_file(self) :
-        context = aq_inner(self.context)
-        request = self.request
-
-    def __call__(self):
-        """
-        """
-        return self.check_file()
-
