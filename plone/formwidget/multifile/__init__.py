@@ -22,14 +22,14 @@ class MultiFileField(List):
     implements(IMultiFileField)
 
     multi = True
-    use_flashupload = False
+    use_flashupload = True
     size_limit = 0
     sim_upload_limit = 1
     allowable_file_extensions = u"*.*;"
 
     def __init__(self,
         multi=True,
-        use_flashupload=False,
+        use_flashupload=True,
         size_limit=0,
         sim_upload_limit=1,
         allowable_file_extensions=u"*.*;",

@@ -30,7 +30,7 @@ class IMultiFileField(IObject):
                                           "For modern browsers the javascript tool is more powerful. "
                                           "Flash Upload is just more user friendly under other browsers (MSIE 7, MSIE 8),  "
                                           "but has many problems : don't work in https, don't work behind HTTP Authentication ..."),
-                           default=False,
+                           default=True,
                            required=False)
 
     size_limit = Int( title=_(u"title_size_limit", default=u"Size limit"),
