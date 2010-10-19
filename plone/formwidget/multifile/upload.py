@@ -49,7 +49,7 @@ class UploadFile(BrowserView):
         # FlashUpload does not authenicate properly, therefore a draft would
         # not have been created yet, so we need to update the form which in
         # turn will load the draft
-        if self.widget.field.use_flashupload:
+        if self.widget.field.use_flashupload and self.request.get('__ac') is None:
             self.request.set('__ac', decode(self.request.get('ticket')))
             self.widget.form.update()
             self.widget = self.widget.form.widgets[self.widget.field.__name__]

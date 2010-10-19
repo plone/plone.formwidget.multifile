@@ -29,16 +29,22 @@ FLASH_UPLOAD_JS = """
             'hideButton'    : false,
             'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
             'onComplete'    : function (event, queueID, fileObj, responseJSON, data) {
+                alert('Complete');
+                alert(responseJSON);
+                alert(responseJSON.html);
                 try{
-                    response = jQuery.parseJSON( responseJSON );
+                    response = jQuery.parseJSON(responseJSON);
                 } catch(err){
                     return false;
                 }
+                alert(response);
+                alert(response.html);
 
                 // TODO:  Do something to indicate the error
                 if( response.error ) { return false; }
 
                 jQuery('#%(file_list_id)s').append(jQuery(response.html));
+                alert('done');
             }
         });
     });

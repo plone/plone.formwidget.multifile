@@ -25,7 +25,7 @@ from plone.app.drafts.interfaces import IDraftable
 
 from plone.formwidget.multifile.interfaces import IMultiFileField
 #from plone.formwidget.multifile.inlinejavascript import FLASH_UPLOAD_JS, XHR_UPLOAD_JS
-from plone.formwidget.multifile.utils import encode, decodeQueryString
+from plone.formwidget.multifile.utils import encode, decode, decodeQueryString
 
 
 # ------------------------------------------------------------------------------
@@ -76,6 +76,12 @@ class MultiFileWidget(multi.MultiWidget):
     def __init__(self, request):
         super(multi.MultiWidget, self).__init__(request)
         self.request.form.update(decodeQueryString(request.get('QUERY_STRING', '')))
+
+        # FlashUpload does not authenicate properly, therefore a draft would
+        # not have been created yet, so we need to update the form which in
+        # turn will load the draft
+        if self.request.get('__ac') is None:
+            self.request.set('__ac', decode(self.request.get('ticket')))
 
     @property
     def better_context(self):
