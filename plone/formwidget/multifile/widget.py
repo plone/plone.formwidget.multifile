@@ -9,6 +9,7 @@ from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse
+from zope.pagetemplate.interfaces import IPageTemplate
 
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.utils import get_icon_for
@@ -59,22 +60,18 @@ from plone.formwidget.multifile.utils import encode, decodeQueryString
 
 def getFlashInlineJavascript():
     # DEBUG:  import each time to make sure we get debugging changes
-    from plone.formwidget.multifile.inlinejavascript import DELETE, FLASH_UPLOAD_JS
-    return DELETE + FLASH_UPLOAD_JS
+    from plone.formwidget.multifile.inlinejavascript import MULTIFILE_INLINE_JS, FLASH_UPLOAD_JS
+    return MULTIFILE_INLINE_JS + FLASH_UPLOAD_JS
 
 def getXHRInlineJavascript():
     # DEBUG:  import each time to make sure we get debugging changes
-    from plone.formwidget.multifile.inlinejavascript import DELETE, XHR_UPLOAD_JS
-    return DELETE + XHR_UPLOAD_JS
+    from plone.formwidget.multifile.inlinejavascript import MULTIFILE_INLINE_JS, XHR_UPLOAD_JS
+    return MULTIFILE_INLINE_JS + XHR_UPLOAD_JS
 
 class MultiFileWidget(multi.MultiWidget):
     implements(IMultiFileWidget, IPublishTraverse, IDraftable)
 
-    klass = u'multi-file-widget'
-
-    input_template = ViewPageTemplateFile('input.pt')
-    display_template = ViewPageTemplateFile('display.pt')
-    file_template = ViewPageTemplateFile('file_template.pt')
+    klass = u'multifile-widget'
 
     def __init__(self, request):
         super(multi.MultiWidget, self).__init__(request)
@@ -84,58 +81,54 @@ class MultiFileWidget(multi.MultiWidget):
     def better_context(self):
         return self.form.context
 
-    def render(self):
-        self.update()
-        if self.mode == 'input':
-            return self.input_template(self)
-        else:
-            return self.display_template(self)
-
     def editing(self):
         return self.mode == 'input'
 
     def get_data(self):
         """
         """
-        if self.value:
-            #converter = IDataConverter(self)
-            #converted_value = converter.toFieldValue(self.value)
-            for i, file_ in enumerate(self.value):
-                yield self.render_file(file_, index=i)
+        for index, subwidget in enumerate(self.widgets):
+            yield self.render_widget(subwidget, index)
 
-    def render_file(self, file_, index=None, context=None):
+    def render_widget(self, subwidget, index):
         """Renders the <li> for one file.
         """
-        if context == None:
-            context = self.better_context
+        context = self.better_context
 
-        if index == None:
-            raise ValueError('Either value or index expected')
-
-        value = 'index:%i' % index
         view_name = self.name[len(self.form.prefix):]
         view_name = view_name[len(self.form.widgets.prefix):]
         download_url = '%s/++widget++%s/%s/@@download/%s' % (
             self.request.getURL(),
             view_name,
-            #index,
-            file_.filename,
-            file_.filename
+            urllib.quote(subwidget.value.filename),
+            urllib.quote(subwidget.value.filename)
             )
 
-        options = {'value': value,
-                   'icon': '/'.join((context.portal_url(),
-                                     get_icon_for(context, file_))),
-                   'filename': file_.filename,
-                   'size': int(round(file_.getSize() / 1024)),
+        options = {'icon': '/'.join((context.portal_url(),
+                                     get_icon_for(context, subwidget.value))),
+                   'filename': subwidget.value.filename,
+                   'size': int(round(subwidget.value.getSize() / 1024)),
                    'download_url': download_url,
                    'widget': self,
                    'editable': self.mode == 'input',
                    }
 
-        return self.file_template(**options)
+        template = zope.component.getMultiAdapter(
+            (self.context, self.request, self, self.field, subwidget),
+            IPageTemplate,
+            name=self.mode)
+        return template(subwidget, **options)
 
     def update(self):
+        # Support old list schema
+        from plone.formwidget.multifile import MultiFileField
+        if not isinstance(self.field, MultiFileField):
+            self.field.multi = MultiFileField.multi
+            self.field.use_flashupload = MultiFileField.use_flashupload
+            self.field.size_limit = MultiFileField.size_limit
+            self.field.sim_upload_limit = MultiFileField.sim_upload_limit
+            self.field.allowable_file_extensions = MultiFileField.allowable_file_extensions
+
         super(MultiFileWidget, self).update()
         self.portal = getSite()
 

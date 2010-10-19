@@ -155,7 +155,7 @@ class UploadFile(BrowserView):
             request.URL = request.getURL()[0:(request.getURL().find('/', len(self.content.absolute_url()) + 1))]
             responseJSON = {u'success'  : True,
                             u'filename' : newWidget.filename,
-                            u'html'     : widget.render_file(newWidget.value, index=index),
+                            u'html'     : widget.render_widget(newWidget, int(index)),
                             u'counter'  : len(widget.widgets),
                         }
         else :

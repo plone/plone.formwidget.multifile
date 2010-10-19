@@ -2,6 +2,10 @@
 <object name="portal_css" meta_type="Stylesheets Registry">
  <stylesheet title="" cacheable="False" compression="safe"
     conditionalcomment="" cookable="True" enabled="True" expression=""
+    id="++resource++plone.formwidget.multifile/multifile.css" media=""
+    rel="stylesheet" rendering="import"/>
+ <stylesheet title="" cacheable="False" compression="safe"
+    conditionalcomment="" cookable="True" enabled="True" expression=""
     id="++resource++plone.formwidget.multifile/uploadify.css" media=""
     rel="stylesheet" rendering="import"/>
  <stylesheet title="" cacheable="False" compression="safe"

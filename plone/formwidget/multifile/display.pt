@@ -1,6 +1,6 @@
 <div class="multi-file">
 
-  <ul class="multi-file-files">
+  <ul class="multifile-list multifile-files">
     <li tal:repeat="html view/get_data"
         tal:replace="structure html" />
   </ul>

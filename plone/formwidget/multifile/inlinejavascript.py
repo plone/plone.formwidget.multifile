@@ -1,34 +1,12 @@
-"""Contains the inline javascript MultiFile widget requires for flash and
+"""Contains the inline javascript Multifile widget requires for flash and
 ajax uploads"""
 
-DELETE = """
+MULTIFILE_INLINE_JS = """
     jQuery(document).ready(function() {
-        bindDelete = function(scope) {
-          $('.multifiledelete', scope).click(function(event) {
-            event.preventDefault();
-
-            // TODO:  Add a spinner
-            var delete_anchor = $(this).html('%(delete_message)s');
-
-            // Ajax request
-            $.ajax({
-                type     : "POST",
-                url      : "%(delete_url)s",
-                data     : {filename: $(this).closest('li.multi-file-file').find('a .filename').html()},
-                dataType : "json",
-                success  : function(responseJSON){
-                    if(responseJSON.success) {
-                        $(delete_anchor).closest('li.multi-file-file').remove();
-                        $('#content').before($(document.createElement('dl')).html(responseJSON.html).attr('class', 'portalMessage info'));
-                    } else {
-                        $(delete_anchor).html('Error');
-                        $('#content').before($(document.createElement('dl')).html(responseJSON.html).attr('class', 'portalMessage error'));
-                    }
-                }
-            });
-          });
-        }
-        bindDelete(this);
+        jQuery('#%(name)s').multifile({
+            'deleteURL'     : '%(delete_url)s',
+            'deleteMessage' : '%(delete_message)s'
+        });
     });
 """
 
@@ -60,10 +38,8 @@ FLASH_UPLOAD_JS = """
                 // TODO:  Do something to indicate the error
                 if( response.error ) { return false; }
 
-                var newLi = $(response.html);
-                bindDelete(newLi);
-                jQuery('#%(file_list_id)s').append(newLi);
-            },
+                jQuery('#%(file_list_id)s').append(jQuery(response.html));
+            }
         });
     });
 """
@@ -78,9 +54,7 @@ XHR_UPLOAD_JS = """
             cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
 
             onComplete: function (id, filename, responseJSON) {
-                var newLi = $(responseJSON.html);
-                bindDelete(newLi);
-                jQuery('#%(file_list_id)s').append(newLi);
+                jQuery('#%(file_list_id)s').append(jQuery(responseJSON.html));
 
                 var uploader = xhr_%(id)s;
                 MultiFileUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);

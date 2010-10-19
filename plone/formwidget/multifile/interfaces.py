@@ -36,12 +36,12 @@ class IMultiFileField(IObject):
     size_limit = Int( title=_(u"title_size_limit", default=u"Size limit"),
                       description=_(u"description_size_limit", default=u"Size limit for each file in KB, 0 = no limit"),
                       default=0,
-                      required=True)
+                      required=False)
 
     sim_upload_limit = Int( title=_(u"title_sim_upload_limit", default=u"Simultaneous uploads limit"),
                             description=_(u"description_sim_upload_limit", default=u"Number of simultaneous files uploaded, over this number uploads are placed in a queue, 0 = no limit"),
                             default=2,
-                            required=True)
+                            required=False)
 
     allowable_file_extensions = Text( title=_(u"title_allowable_file_extensions", default=u"Allowable file extensions"),
                             description=_(u"description_allowable_file_extensions", default=u"Allowable file extensions seperated by a semi-colon or type of image, video, audio or flash."),

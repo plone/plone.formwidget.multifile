@@ -1,0 +1,25 @@
+.multifile-list {
+    display: block; 
+    margin:15px 0; 
+    padding:0; 
+    list-style:disc; 
+    clear: both; 
+    list-style: none outside none
+} 
+
+.multifile-list .multifile-image {
+    clear: both;
+    display: block;
+    list-style: none outside none;
+    list-style-type: none;
+    background-color:#F5F5F5;
+    border:3px solid #E5E5E5;
+    margin:5px 0 0 0;
+    padding:5px 10px;
+    font-size: 11px;
+    min-height: 50px;
+}
+
+.multifile-info {
+    display: none;
+}

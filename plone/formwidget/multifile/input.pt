@@ -16,9 +16,9 @@
     <!--label i18n:translate="label_choose_your_files"
            id="label-upload">Choose your files : </label-->
 
-    <div class="multi-file">
+    <div class="multifile">
       <ul tal:attributes="id view/get_file_list_id"
-            class="multi-file-files">
+            class="multifile-list multifile-files">
         <li tal:repeat="html view/get_data"
             tal:replace="structure html" />
       </ul>
@@ -50,7 +50,7 @@
            i18n:attributes="value Title" />
   </div>
 
-    <!-- uploadify javascript -->
+  <!-- multifile javascript -->
   <script type="text/javascript"
           tal:content="structure view/get_inline_js">
   </script>

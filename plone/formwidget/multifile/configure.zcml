@@ -1,111 +1,109 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:z3c="http://namespaces.zope.org/z3c"
     xmlns:gs="http://namespaces.zope.org/genericsetup"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="plone.formwidget.multifile">
 
-  <!-- Include our dependencies -->
-  <includeDependencies package="." />
+    <!-- Include our dependencies -->
+    <includeDependencies package="." />
 
-  <adapter factory=".widget.MultiFileFieldWidget" />
+    <adapter factory=".widget.MultiFileFieldWidget" />
 
-  <zope:view
-      type="zope.publisher.interfaces.browser.IBrowserRequest"
-      for=".interfaces.IMultiFileWidget"
-      provides="zope.app.form.interfaces.IInputWidget"
-      factory=".widget.MultiFileWidget"
-      permission="zope.Public"
-      />
+    <zope:view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for=".interfaces.IMultiFileWidget"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory=".widget.MultiFileWidget"
+        permission="zope.Public"
+        />
 
-  <!-- Quick upload file Views
-       we use permission zope.Public
-       on flash_upload_file
-       because authentication is done
-       using a ticket -->
+    <!-- Multifile file Views -->
+    <browser:page
+        for=".interfaces.IMultiFileWidget"
+        name="multifile_upload_file"
+        attribute="multifile_upload_file"
+        class=".upload.UploadFile"
+        permission="cmf.AddPortalContent"/>
 
-  <browser:page
-      for=".interfaces.IMultiFileWidget"
-      name="multifile_upload_file"
-      attribute="multifile_upload_file"
-      class=".upload.UploadFile"
-      permission="cmf.AddPortalContent"/>
+    <!-- We use permission zope.Public on flash_upload_file
+         because it can't authenicate normally (widget resposible) -->
+    <browser:page
+        for=".interfaces.IMultiFileWidget"
+        name="multifile_flash_upload_file"
+        attribute="multifile_flash_upload_file"
+        class=".upload.UploadFile"
+        permission="zope.Public"/>
 
-  <browser:page
-      for=".interfaces.IMultiFileWidget"
-      name="multifile_flash_upload_file"
-      attribute="multifile_flash_upload_file"
-      class=".upload.UploadFile"
-      permission="zope.Public"/>
+    <browser:page
+        for=".interfaces.IMultiFileWidget"
+        name="multifile_delete"
+        attribute="multifile_delete"
+        class=".delete.DeleteFile"
+        permission="cmf.AddPortalContent"/>
 
-  <browser:page
-      for=".interfaces.IMultiFileWidget"
-      name="multifile_delete"
-      attribute="multifile_delete"
-      class=".delete.DeleteFile"
-      permission="cmf.AddPortalContent"/>
+    <!-- Multifile check file -->
+    <browser:page
+        for=".interfaces.IMultiFileWidget"
+        name="multifile_check_file"
+        class=".upload.CheckFile"
+        permission="cmf.AddPortalContent"/>
 
-  <!-- Quick Upload check file -->
+    <!-- RESOURCES -->
+    <browser:resourceDirectory
+        name="plone.formwidget.multifile"
+        directory="resources"
+        />
 
-  <browser:page
-      for=".interfaces.IMultiFileWidget"
-      name="multifile_check_file"
-      class=".upload.CheckFile"
-      permission="cmf.AddPortalContent"/>
+    <!-- widget templates -->
+    <z3c:widgetTemplate
+        mode="display"
+        widget=".interfaces.IMultiFileWidget"
+        layer="z3c.form.interfaces.IFormLayer"
+        template="display.pt"
+        />
 
-  <!-- ticket view which generate a ticket for each user/folder absolute url
-       used only when no user cookie is available (not standard authentification) -->
-  <!--browser:page
-      for=".interfaces.IQuickUploadCapable"
-      name="quickupload_ticket"
-      class=".ticket.TicketView"
-      permission="cmf.AddPortalContent"
-      /-->
+    <z3c:widgetTemplate
+        mode="input"
+        widget=".interfaces.IMultiFileWidget"
+        layer="z3c.form.interfaces.IFormLayer"
+        template="input.pt"
+        />
 
-  <!-- quick upload control panel adapter -->
-  <!--adapter factory=".quickupload_settings.QuickUploadControlPanelAdapter" /-->
+    <!-- sub-widget templates -->
+    <z3c:widgetTemplate
+        mode="display"
+        widget="plone.formwidget.namedfile.interfaces.INamedFileWidget"
+        layer="z3c.form.interfaces.IFormLayer"
+        view=".interfaces.IMultiFileWidget"
+        template="file_display.pt"
+        />
 
-  <!-- quick upload control panel form view -->
-  <!--browser:page
-      name="quickupload-controlpanel"
-      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
-      class=".quickupload_settings.QuickUploadControlPanel"
-      permission="cmf.ManagePortal"
-  /-->
+    <z3c:widgetTemplate
+        mode="display"
+        widget="plone.formwidget.namedfile.interfaces.INamedImageWidget"
+        layer="z3c.form.interfaces.IFormLayer"
+        view=".interfaces.IMultiFileWidget"
+        template="image_display.pt"
+        />
 
+    <z3c:widgetTemplate
+        mode="input"
+        widget="plone.formwidget.namedfile.interfaces.INamedFileWidget"
+        layer="z3c.form.interfaces.IFormLayer"
+        view=".interfaces.IMultiFileWidget"
+        template="file_input.pt"
+        />
 
-  <!-- register some resources -->
-  <!-- RESOURCES -->
-  <browser:resourceDirectory
-      name="plone.formwidget.multifile"
-      directory="resources"
-      />
-
-
-  <!--browser:resource
-      name="multifile.js"
-      file="resources/multifile.js"/>
-
-  <browser:resource
-      name="jquery.uploadify.js"
-      file="resources/jquery.uploadify.v2.1.0.min.js"/>
-
-  <browser:resource
-      name="uploadify.swfobject.js"
-      file="resources/swfobject.js"/>
-
-  <browser:resource
-      name="uploadify.swf"
-      file="resources/uploadify.swf"/>
-
-  <browser:resource
-      name="uploadify.css"
-      file="resources/uploadify.css"/>
-
-  <browser:resource
-      name="cancel.png"
-      image="resources/cancel.png"/-->
+    <z3c:widgetTemplate
+        mode="input"
+        widget="plone.formwidget.namedfile.interfaces.INamedImageWidget"
+        layer="z3c.form.interfaces.IFormLayer"
+        view=".interfaces.IMultiFileWidget"
+        template="image_input.pt"
+        />
 
    <gs:registerProfile
       name="default"
