@@ -38,7 +38,6 @@ FLASH_UPLOAD_JS = """
                 if( response.error ) { return false; }
 
                 jQuery('#%(file_list_id)s').append(jQuery(response.html));
-                alert('done');
             }
         });
     });
