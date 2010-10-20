@@ -15,8 +15,6 @@ from z3c.form import interfaces
 
 from plone.app.z3cformdrafts.drafting import Z3cFormDraftProxy
 
-from plone.formwidget.multifile.utils import decode
-
 try :
     # python 2.6
     import json
@@ -46,22 +44,13 @@ class UploadFile(BrowserView):
 
         self.content = aq_inner(self.widget.context)
 
-        # FlashUpload does not authenicate properly, therefore a draft would
-        # not have been created yet, so we need to update the form which in
-        # turn will load the draft
-        if self.widget.field.use_flashupload and self.request.get('__ac') is None:
-            self.request.set('__ac', decode(self.request.get('ticket')))
-            self.widget.form.update()
-            self.widget = self.widget.form.widgets[self.widget.field.__name__]
-            self.content = aq_inner(self.widget.context)
-
     # Is this needed now since adapted uses attribute to call function?
-    def __call__(self):
-        #if self.widget.field.use_flashupload:
-        #    return self.multifile_flash_upload_file()
-        #else:
-        #    return self.multifile_upload_file()
-        return self.multifile_upload_file()
+    #def __call__(self):
+    #    #if self.widget.field.use_flashupload:
+    #    #    return self.multifile_flash_upload_file()
+    #    #else:
+    #    #    return self.multifile_upload_file()
+    #    return self.multifile_upload_file()
 
     def multifile_flash_upload_file(self):
         return self.multifile_upload_file()

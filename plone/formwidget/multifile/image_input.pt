@@ -10,7 +10,7 @@
       <span class="discreet">
         &mdash;
         <a href=""
-           class="multifiledelete"
+           class="multifile-delete"
            i18n:translate="link_delete_file">delete</a>
       </span>
     </tal:EDITABLE>
