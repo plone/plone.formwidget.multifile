@@ -11,11 +11,16 @@ MULTIFILE_INLINE_JS = """
 """
 
 FLASH_UPLOAD_JS = """
+    // TODO:
+    // - create custom queue;
+    // - notify user that file was not uploaded if it was a duplicate
+    //   (just add to INFO bar;  create a routine to update info bar and use it)
+    // - implement error messages
     jQuery(document).ready(function() {
         jQuery('#%(name)s').uploadify({
             'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
             'script'        : '%(actionURL)s',
-            //'checkScript'   : '%(checkScriptURL)s',
+            'checkScript'   : '%(checkScriptURL)s',
             'fileDataName'  : 'qqfile',
             'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
             'folder'        : '%(physicalPath)s',
@@ -41,10 +46,20 @@ FLASH_UPLOAD_JS = """
                 jQuery('#%(fileListID)s').append(jQuery(response.html));
             }
         });
+
+        // Override uploadify's default onCheck bindings
+        jQuery('#%(name)s').multifileOverrideFlashOnCheck();
+
     });
 """
 
 XHR_UPLOAD_JS = """
+
+    jQuery(document).ready(function() {
+        // Override qq.UploadHandlerForm.prototype._getIframeContentJSON
+        jQuery(this).multifileOverrideFileUploaderIframeJSONHandler();
+    });
+
     createUploader_%(ID)s= function(){
         xhr_%(ID)s = new qq.FileUploader({
             element: jQuery('#%(name)s')[0],
@@ -52,14 +67,12 @@ XHR_UPLOAD_JS = """
             autoUpload: true,
             multi: %(multi)s,
             cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
-
             onComplete: function (ID, filename, responseJSON) {
                 jQuery('#%(fileListID)s').append(jQuery(responseJSON.html));
 
                 var uploader = xhr_%(ID)s;
-                MultiFileUpload.onUploadComplete(uploader, uploader._element, ID, filename, responseJSON);
+                jQuery(uploader._getItemByFileId(ID)).remove();
             },
-
             allowedExtensions: %(fileExtensionsList)s,
             sizeLimit: %(xhrSizeLimit)s,
             simUploadLimit: %(simUploadLimit)s,

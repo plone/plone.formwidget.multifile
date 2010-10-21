@@ -3,24 +3,6 @@
  *
  */
 
-var MultiFileUpload = MultiFileUpload || {};
-
-MultiFileUpload.onAllUploadsComplete = function(){
-    Browser.onUploadComplete();
-}
-
-MultiFileUpload.onUploadComplete = function(uploader, domelement, id, fileName, responseJSON) {
-    var uploadList = jQuery('.qq-upload-list', domelement);
-    if (responseJSON.success) {
-        window.setTimeout( function() {
-            jQuery(uploader._getItemByFileId(id)).remove();
-            // after the last upload, if no errors, reload the page
-            var newlist = jQuery('li', uploadList);
-            if (! newlist.length) window.setTimeout( MultiFileUpload.onAllUploadsComplete, 5);
-        }, 50);
-    }
-}
-
 if(jQuery)(
     function(jQuery){
         jQuery.extend(jQuery.fn,{
@@ -78,6 +60,64 @@ if(jQuery)(
                     });
                 });
             });
+        },
+        // Overrides the flash onClick function, since the onCheck function
+        // does not contain the json response.  Submitted a bug report so when
+        // uploadify is fixed, we can just implement a custon onSubmit function
+        // instead of overriding
+        multifileOverrideFlashOnCheck:function() {
+            jQuery(this).each(function() {
+                // Override default onCheck routine
+                jQuery(this).unbind("uploadifyCheckExist");
+                jQuery(this).bind("uploadifyCheckExist", {'action': settings.onCheck}, function(event, checkScript, fileQueueObj, folder, single) {
+                    var postData = new Object();
+                    postData = fileQueueObj;
+                    //postData.folder = pagePath + folder;
+                    if (single) {
+                        for (var ID in fileQueueObj) {
+                           var singleFileID = ID;
+                        }
+                    }
+                    jQuery.post(checkScript, postData, function(data) {
+                        for(var key in data) {
+                            if (event.data.action(event, checkScript, fileQueueObj, folder, single) !== false) {
+                                // Never allow duplicates, since server will reject them
+                                // You would need to delete, then re-add to replace
+                                document.getElementById(jQuery(event.target).attr('id') + 'Uploader').cancelFileUpload(key, true, true);
+                            }
+                        }
+                        if (single) {
+                            document.getElementById(jQuery(event.target).attr('id') + 'Uploader').startFileUpload(singleFileID, true);
+                        } else {
+                            document.getElementById(jQuery(event.target).attr('id') + 'Uploader').startFileUpload(null, true);
+                        }
+                    }, "json");
+                });
+            });
+        },
+        // Override qq.UploadHandlerForm.prototype._getIframeContentJSON
+        // Allows json response to be embedded in <script> tags, otherwise
+        // html response will fail unless html was previously encoded
+        // Submitted this 'fix' as a request so this override may be able to be
+        // removed in future
+        multifileOverrideFileUploaderIframeJSONHandler:function() {
+            qq.UploadHandlerForm.prototype._getIframeContentJSON = function(iframe){
+                // iframe.contentWindow.document - for IE<7
+                var doc = iframe.contentDocument ? iframe.contentDocument: iframe.contentWindow.document,
+                    response;
+
+                // XXX: Added for multifile, since returned HTML in response does not parse
+                // correctly when added directly to an iframe body
+                responseText = doc.getElementById('json-response') ? doc.getElementById('json-response').innerHTML : doc.body.innerHTML;
+                try{
+                    //response = eval("(" + doc.body.innerHTML + ")");
+                    response = jQuery.parseJSON( responseText );
+                } catch(err){
+                    response = {};
+                }
+
+                return response;
+            }
         }
     })
 })(jQuery);

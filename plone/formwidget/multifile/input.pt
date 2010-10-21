@@ -52,7 +52,7 @@
 
   <!-- multifile javascript -->
   <script type="text/javascript"
-          tal:content="structure view/getInlineJS">
+          tal:replace="structure view/getInlineJS">
   </script>
 </div>
 </tal:WIDGET>

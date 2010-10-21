@@ -45,7 +45,20 @@ class MultiFileUpload(BrowserView):
         self.content = aq_inner(self.widget.context)
 
     def checkFile(self):
-        pass
+        response = self.request.RESPONSE
+        response.setHeader('Expires', 'Sat, 1 Jan 2000 00:00:00 GMT')
+        response.setHeader('Cache-control', 'no-cache')
+        # the good content type woul be text/json or text/plain but IE
+        # do not support it
+        response.setHeader('Content-Type', 'text/html; charset=utf-8')
+
+        responseJSON = {}
+        for key, value in self.request.form.items():
+            if key == 'folder':
+                continue
+            if self._fileExists(value):
+                responseJSON[key] = value
+        return json.dumps(responseJSON)
 
     def flashUploadFile(self):
         return self.uploadFile()
@@ -55,22 +68,19 @@ class MultiFileUpload(BrowserView):
             logger.info("Draft does not exist; maybe user could not be authorized!")
             return json.dumps({u'error': u'draftError'})
 
-        widget = self.widget
-        request = self.request
-        response = request.RESPONSE
-
+        response = self.request.RESPONSE
         response.setHeader('Expires', 'Sat, 1 Jan 2000 00:00:00 GMT')
         response.setHeader('Cache-control', 'no-cache')
         # the good content type woul be text/json or text/plain but IE
         # do not support it
         response.setHeader('Content-Type', 'text/html; charset=utf-8')
 
-        if request.HTTP_X_REQUESTED_WITH :
+        if self.request.HTTP_X_REQUESTED_WITH :
             # using ajax upload
-            filename = urllib.unquote(request.HTTP_X_FILE_NAME)
+            filename = urllib.unquote(self.request.HTTP_X_FILE_NAME)
             upload_with = "XHR"
             try :
-                fileObject = request.BODYFILE
+                fileObject = self.request.BODYFILE
                 fileData = fileObject.read()
                 fileObject.seek(0)
             except AttributeError :
@@ -90,19 +100,19 @@ class MultiFileUpload(BrowserView):
                 return json.dumps({u'error': u'serverError'})
         elif not self.widget.field.use_flashupload:
             # using classic form post method (MSIE<=8)
-            fileData = request.get("qqfile", None)
+            fileData = self.request.get("qqfile", None)
             filename = getattr(fileData, 'filename', '').split("\\")[-1]
             upload_with = "CLASSIC FORM POST"
         else:
             # using flash upload
-            fileData = request.get("qqfile", None)
+            fileData = self.request.get("qqfile", None)
             filename = getattr(fileData, 'filename', '').split("\\")[-1]
             upload_with = "FLASH"
 
         if not fileData:
             return json.dumps({u'error': u'emptyError'})
 
-        if not self._checkFileName(widget, filename) :
+        if self._fileExists(filename) :
             logger.info("The file id for %s already exists, upload rejected" % filename)
             return json.dumps({u'error': u'serverErrorAlreadyExists'})
 
@@ -113,34 +123,34 @@ class MultiFileUpload(BrowserView):
 
         logger.info("uploading file with %s : filename=%s" % (upload_with, filename))
 
-        index = len(widget.value)
-        newWidget = widget.getWidget(index)
+        index = len(self.widget.value)
+        newWidget = self.widget.getWidget(index)
         converter = interfaces.IDataConverter(newWidget)
         newWidget.value = converter.toFieldValue(fileData)
 
         if newWidget.value is not None:
-            widget.value.append(newWidget.value)
-            widget.updateWidgets()
+            self.widget.value.append(newWidget.value)
+            self.widget.updateWidgets()
             # Save on draft
             dm = zope.component.getMultiAdapter(
-                (self.content, widget.field), interfaces.IDataManager)
-            dm.set(interfaces.IDataConverter(widget).toFieldValue(widget.value))
+                (self.content, self.widget.field), interfaces.IDataManager)
+            dm.set(interfaces.IDataConverter(self.widget).toFieldValue(self.widget.value))
 
             # TODO; need to create a url create function in widget
             #logger.info("file url: %s" % newWidget.value.absolute_url())
 
             # Reset requestURL so file URL will be rendered properly
-            request.URL = request.getURL()[0:(request.getURL().find('/', len(self.content.absolute_url()) + 1))]
+            self.request.URL = self.request.getURL()[0:(self.request.getURL().find('/', len(self.content.absolute_url()) + 1))]
             responseJSON = {u'success'  : True,
                             u'filename' : newWidget.filename,
-                            u'html'     : widget.render_widget(newWidget, int(index)),
-                            u'counter'  : len(widget.widgets),
+                            u'html'     : self.widget.renderWidget(newWidget, int(index)),
+                            u'counter'  : len(self.widget.widgets),
                         }
         else :
             responseJSON = {u'error': 'error'}
 
         # If iframe was used; wrap the response in a <script> tag or will get json parse errors
-        if request.HTTP_X_REQUESTED_WITH or self.widget.field.use_flashupload:
+        if self.request.HTTP_X_REQUESTED_WITH or self.widget.field.use_flashupload:
             return json.dumps(responseJSON)
         else:
             return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
@@ -161,14 +171,14 @@ class MultiFileUpload(BrowserView):
             return 1
         return 0
 
-    def _checkFileName(self, widget, filename):
+    def _fileExists(self, filename):
         """
         check if file exists
         """
-        for fileObject in widget.value:
+        for fileObject in self.widget.value:
             if fileObject.filename == filename:
-                return False
-        return True
+                return True
+        return False
 
 
 class FieldStorageStub:

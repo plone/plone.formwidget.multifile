@@ -44,6 +44,9 @@ from plone.formwidget.multifile.utils import encode, decode, decodeQueryString
 #   image ajax for preview
 # - if multi is true, disable browse button allwoing one 1 image
 # - add number of files max; size; etc and disable button on max
+# - fallback to list style 'add' if no javascript
+#
+# - add max number of files(maybe list widget has max already); sizeLimit;
 #
 # KSS STUFF
 # - Implement kss security; make sure only valid user can delete!!!
@@ -142,13 +145,19 @@ class MultiFileWidget(multi.MultiWidget):
         self.portal = getSite()
 
     def getInlineJS(self):
+        JS="""<script type="text/javascript">// <![CDATA[
+        %(javascript)s
+        // ]]></script>
+        """
         settings = self.uploadSettings()
         if self.field.use_flashupload:
-            #return FLASH_UPLOAD_JS % settings
-            return getFlashInlineJavascript() % settings
+            #javascript = FLASH_UPLOAD_JS % settings
+            javascript = getFlashInlineJavascript() % settings
         else:
-            #return XHR_UPLOAD_JS % settings
-            return getXHRInlineJavascript() % settings
+            #javascript = XHR_UPLOAD_JS % settings
+            javascript = getXHRInlineJavascript() % settings
+
+        return JS % {'javascript' : javascript}
 
     def contentTypesInfos(self, allowable_file_extensions):
         """
