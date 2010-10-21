@@ -25,7 +25,7 @@ except :
     import simplejson as json
 
 
-class DeleteFile(BrowserView):
+class MultiFileDeleteFile(BrowserView):
     """The ajax XHR calls this view for every file added interactively.
     This view saves the file on a draft.  When the form is actually submitted
     the widget gets the files from the draft and stores it in the actual target.
@@ -43,11 +43,7 @@ class DeleteFile(BrowserView):
         self.widget = context
         self.content = aq_inner(self.widget.context)
 
-    # Is this needed now since adapted uses attribute to call function?
-    #def __call__(self):
-    #    pass
-
-    def multifile_delete(self):
+    def deleteFile(self):
         response = self.request.RESPONSE
         response.setHeader('Expires', 'Sat, 1 Jan 2000 00:00:00 GMT')
         response.setHeader('Cache-control', 'no-cache')
@@ -55,7 +51,7 @@ class DeleteFile(BrowserView):
         # do not support it
         response.setHeader('Content-Type', 'text/html; charset=utf-8')
 
-        html = u'<dt>%s</dt><dd>%s</dd>';
+        html = u'<dt>%s</dt><dd>%s</dd>'
 
         filename = self.request.form.get('filename')
         if filename is None:

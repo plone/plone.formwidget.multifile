@@ -20,12 +20,12 @@
         permission="zope.Public"
         />
 
-    <!-- Multifile file Views -->
+    <!-- MultiFile file Views -->
     <browser:page
         for=".interfaces.IMultiFileWidget"
         name="multifile_upload_file"
-        attribute="multifile_upload_file"
-        class=".upload.UploadFile"
+        attribute="uploadFile"
+        class=".upload.MultiFileUpload"
         permission="cmf.AddPortalContent"/>
 
     <!-- We use permission zope.Public on flash_upload_file
@@ -33,31 +33,33 @@
     <browser:page
         for=".interfaces.IMultiFileWidget"
         name="multifile_flash_upload_file"
-        attribute="multifile_flash_upload_file"
-        class=".upload.UploadFile"
+        attribute="flashUploadFile"
+        class=".upload.MultiFileUpload"
         permission="zope.Public"/>
 
-    <browser:page
-        for=".interfaces.IMultiFileWidget"
-        name="multifile_delete"
-        attribute="multifile_delete"
-        class=".delete.DeleteFile"
-        permission="cmf.AddPortalContent"/>
-
-    <!-- Multifile check file -->
+    <!-- MultiFile check file view -->
     <browser:page
         for=".interfaces.IMultiFileWidget"
         name="multifile_check_file"
-        class=".upload.CheckFile"
+        attribute="checkFile"
+        class=".upload.MultiFileUpload"
+        permission="zope.Public"/>
+
+    <!-- Delete view -->
+    <browser:page
+        for=".interfaces.IMultiFileWidget"
+        name="multifile_delete_file"
+        attribute="deleteFile"
+        class=".delete.MultiFileDeleteFile"
         permission="cmf.AddPortalContent"/>
 
-    <!-- RESOURCES -->
+    <!-- Resources -->
     <browser:resourceDirectory
         name="plone.formwidget.multifile"
         directory="resources"
         />
 
-    <!-- widget templates -->
+    <!-- Widget templates -->
     <z3c:widgetTemplate
         mode="display"
         widget=".interfaces.IMultiFileWidget"
@@ -105,7 +107,8 @@
         template="image_input.pt"
         />
 
-   <gs:registerProfile
+    <!-- Generic Setup -->
+    <gs:registerProfile
       name="default"
       title="Multifile Upload Widget"
       description="A multifile upload widget for use with z3cform or dexterity."

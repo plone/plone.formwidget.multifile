@@ -25,7 +25,7 @@ except :
 logger = logging.getLogger('plone.formwidget.multifile')
 
 
-class UploadFile(BrowserView):
+class MultiFileUpload(BrowserView):
     """The ajax XHR calls this view for every file added interactively.
     This view saves the file on a draft.  When the form is actually submitted
     the widget gets the files from the draft and stores it in the actual target.
@@ -44,18 +44,13 @@ class UploadFile(BrowserView):
 
         self.content = aq_inner(self.widget.context)
 
-    # Is this needed now since adapted uses attribute to call function?
-    #def __call__(self):
-    #    #if self.widget.field.use_flashupload:
-    #    #    return self.multifile_flash_upload_file()
-    #    #else:
-    #    #    return self.multifile_upload_file()
-    #    return self.multifile_upload_file()
+    def checkFile(self):
+        pass
 
-    def multifile_flash_upload_file(self):
-        return self.multifile_upload_file()
+    def flashUploadFile(self):
+        return self.uploadFile()
 
-    def multifile_upload_file(self):
+    def uploadFile(self):
         if not isinstance(self.content, Z3cFormDraftProxy):
             logger.info("Draft does not exist; maybe user could not be authorized!")
             return json.dumps({u'error': u'draftError'})
@@ -72,62 +67,56 @@ class UploadFile(BrowserView):
 
         if request.HTTP_X_REQUESTED_WITH :
             # using ajax upload
-            file_name = urllib.unquote(request.HTTP_X_FILE_NAME)
+            filename = urllib.unquote(request.HTTP_X_FILE_NAME)
             upload_with = "XHR"
             try :
-                file_ = request.BODYFILE
-                file_data = file_.read()
-                file_.seek(0)
+                fileObject = request.BODYFILE
+                fileData = fileObject.read()
+                fileObject.seek(0)
             except AttributeError :
                 # in case of cancel during xhr upload
-                logger.info("Upload of %s has been aborted" % file_name)
+                logger.info("Upload of %s has been aborted" % filename)
                 # not really useful here since the upload block
                 # is removed by "cancel" action, but
                 # could be useful if someone change the js behavior
                 return  json.dumps({u'error': u'emptyError'})
             except :
-                logger.info("Error when trying to read the file %s in request" % file_name)
+                logger.info("Error when trying to read the file %s in request" % filename)
                 return json.dumps({u'error': u'serverError'})
 
             try :
-                file_data = FileUpload(aFieldStorage=FieldStorageStub(file_, {}, file_name))
+                fileData = FileUpload(aFieldStorage=FieldStorageStub(fileObject, {}, filename))
             except TypeError:
                 return json.dumps({u'error': u'serverError'})
         elif not self.widget.field.use_flashupload:
             # using classic form post method (MSIE<=8)
-            file_data = request.get("qqfile", None)
-            filename = getattr(file_data, 'filename', '')
-            file_name = filename.split("\\")[-1]
+            fileData = request.get("qqfile", None)
+            filename = getattr(fileData, 'filename', '').split("\\")[-1]
             upload_with = "CLASSIC FORM POST"
-            # we must test the file size in this case (no client test)
-            if not self._check_file_size(file_data) :
-                logger.info("Test file size : the file %s is too big, upload rejected" % file_name)
-                return json.dumps({u'error': u'sizeError'})
         else:
             # using flash upload
-            file_data = request.get("qqfile", None)
-            filename = getattr(file_data, 'filename', '')
-            file_name = filename.split("\\")[-1]
+            fileData = request.get("qqfile", None)
+            filename = getattr(fileData, 'filename', '').split("\\")[-1]
             upload_with = "FLASH"
-            #TODO: Implement CheckFile view (flash will use it to comfirm first)
-            # we must test the file size in this case (no client test)
-            #if not self._check_file_size(file_data) :
-            #    logger.info("Test file size : the file %s is too big, upload rejected" % file_name)
-            #    return json.dumps({u'error': u'sizeError'})
 
-        if not file_data:
+        if not fileData:
             return json.dumps({u'error': u'emptyError'})
 
-        if not self._check_file_id(widget, file_name) :
-            logger.info("The file id for %s already exists, upload rejected" % file_name)
+        if not self._checkFileName(widget, filename) :
+            logger.info("The file id for %s already exists, upload rejected" % filename)
             return json.dumps({u'error': u'serverErrorAlreadyExists'})
 
-        logger.info("uploading file with %s : filename=%s" % (upload_with, file_name))
+        # Don't rely on flash or ajax to check filesize as it can be hacked
+        if not self._checkFileSize(fileData) :
+            logger.info("Test file size : the file %s is too big, upload rejected" % filename)
+            return json.dumps({u'error': u'sizeError'})
+
+        logger.info("uploading file with %s : filename=%s" % (upload_with, filename))
 
         index = len(widget.value)
         newWidget = widget.getWidget(index)
         converter = interfaces.IDataConverter(newWidget)
-        newWidget.value = converter.toFieldValue(file_data)
+        newWidget.value = converter.toFieldValue(fileData)
 
         if newWidget.value is not None:
             widget.value.append(newWidget.value)
@@ -156,22 +145,28 @@ class UploadFile(BrowserView):
         else:
             return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
 
-    def _check_file_size(self, data):
-        max_size = int(self.widget.field.size_limit)
-        if not max_size :
+    def _checkFileSize(self, data):
+        """ Checks to make sure falie length is less than allowable maximum
+        size
+        """
+        maxSize = int(self.widget.field.size_limit)
+        if not maxSize :
             return 1
         #file_size = len(data.read()) / 1024
         data.seek(0, os.SEEK_END)
-        file_size = data.tell() / 1024
+        fileSize = data.tell() / 1024
         data.seek(0, os.SEEK_SET)
-        max_size = int(self.widget.field.size_limit)
-        if file_size <= max_size:
+        maxSize = int(self.widget.field.size_limit)
+        if fileSize <= maxSize:
             return 1
         return 0
 
-    def _check_file_id(self, widget, filename):
-        for file_ in widget.value:
-            if file_.filename == filename:
+    def _checkFileName(self, widget, filename):
+        """
+        check if file exists
+        """
+        for fileObject in widget.value:
+            if fileObject.filename == filename:
                 return False
         return True
 
@@ -183,17 +178,3 @@ class FieldStorageStub:
         self.file = file
         self.headers = headers
         self.filename = filename
-
-
-class CheckFile(BrowserView):
-    """
-    check if file exists
-    """
-    def check_file(self) :
-        context = aq_inner(self.context)
-        request = self.request
-
-    def __call__(self):
-        """
-        """
-        return self.check_file()

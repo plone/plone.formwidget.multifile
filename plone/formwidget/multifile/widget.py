@@ -58,15 +58,18 @@ from plone.formwidget.multifile.utils import encode, decode, decodeQueryString
 # - IE8 displays a blank <li> item in between each upload
 # ------------------------------------------------------------------------------
 
+
 def getFlashInlineJavascript():
     # DEBUG:  import each time to make sure we get debugging changes
     from plone.formwidget.multifile.inlinejavascript import MULTIFILE_INLINE_JS, FLASH_UPLOAD_JS
     return MULTIFILE_INLINE_JS + FLASH_UPLOAD_JS
 
+
 def getXHRInlineJavascript():
     # DEBUG:  import each time to make sure we get debugging changes
     from plone.formwidget.multifile.inlinejavascript import MULTIFILE_INLINE_JS, XHR_UPLOAD_JS
     return MULTIFILE_INLINE_JS + XHR_UPLOAD_JS
+
 
 class MultiFileWidget(multi.MultiWidget):
     implements(IMultiFileWidget, IPublishTraverse, IDraftable)
@@ -80,26 +83,26 @@ class MultiFileWidget(multi.MultiWidget):
         # FlashUpload does not authenicate properly, therefore a draft would
         # not have been created yet, so we need to update the form which in
         # turn will load the draft
-        if self.request.get('__ac') is None:
+        if self.request.get('__ac') is None and self.request.form.get('ticket') is not None:
             self.request.set('__ac', decode(self.request.get('ticket')))
 
     @property
-    def better_context(self):
+    def betterContext(self):
         return self.form.context
 
     def editing(self):
         return self.mode == 'input'
 
-    def get_data(self):
+    def getData(self):
         """
         """
         for index, subwidget in enumerate(self.widgets):
-            yield self.render_widget(subwidget, index)
+            yield self.renderWidget(subwidget, index)
 
-    def render_widget(self, subwidget, index):
+    def renderWidget(self, subwidget, index):
         """Renders the <li> for one file.
         """
-        context = self.better_context
+        context = self.betterContext
 
         view_name = self.name[len(self.form.prefix):]
         view_name = view_name[len(self.form.widgets.prefix):]
@@ -138,8 +141,8 @@ class MultiFileWidget(multi.MultiWidget):
         super(MultiFileWidget, self).update()
         self.portal = getSite()
 
-    def get_inline_js(self):
-        settings = self.upload_settings()
+    def getInlineJS(self):
+        settings = self.uploadSettings()
         if self.field.use_flashupload:
             #return FLASH_UPLOAD_JS % settings
             return getFlashInlineJavascript() % settings
@@ -147,7 +150,7 @@ class MultiFileWidget(multi.MultiWidget):
             #return XHR_UPLOAD_JS % settings
             return getXHRInlineJavascript() % settings
 
-    def content_types_infos(self, allowable_file_extensions):
+    def contentTypesInfos(self, allowable_file_extensions):
         """
         return some content types infos depending on allowable_file_extensions type
         allowable_file_extensions could be 'image', 'video', 'audio' or any
@@ -184,89 +187,82 @@ class MultiFileWidget(multi.MultiWidget):
 
         return (ext, extlist, msg)
 
-    def upload_settings(self):
+    def uploadSettings(self):
         """Returns a dectionary contianing settings required for javascript
         """
-        context = aq_inner(self.better_context)
+        context = aq_inner(self.betterContext)
         request = self.request
         session = request.get('SESSION', {})
-        portal_url = self.portal.absolute_url()
 
-        # use a ticket for authentication (used for flashupload only)
-        ticket = encode(self.request.cookies.get('__ac', ''))
-
-        # Added
-        fieldName = self.field.__name__
-        requestURL = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
-        widgetURL = requestURL + '/++widget++' + fieldName
+        portalURL         = self.portal.absolute_url()
+        fieldName         = self.field.__name__
+        typeupload        = session.get('typeupload', request.get('typeupload', ''))
+        contentTypesInfos = self.contentTypesInfos(self.field.allowable_file_extensions)
+        ticket            = encode(self.request.cookies.get('__ac', ''))
+        requestURL        = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
+        widgetURL         = requestURL + '/++widget++' + fieldName
         if self.field.use_flashupload:
-            action_url = urllib.quote(widgetURL + '/@@multifile_flash_upload_file')
+            actionURL     = urllib.quote(widgetURL + '/@@multifile_flash_upload_file')
         else:
-            action_url = urllib.quote(widgetURL + '/@@multifile_upload_file')
-
-        delete_url = urllib.quote(widgetURL + '/@@multifile_delete')
+            actionURL     = urllib.quote(widgetURL + '/@@multifile_upload_file')
 
         settings = dict(
-            multi                   = self.field.multi and 'true' or 'false',
-            action_url              = action_url,
-            delete_url              = delete_url,
-            field_name              = self.field.__name__,
-            ticket                  = ticket,
-            portal_url              = portal_url,
-            typeupload              = '',
-            context_url             = context.absolute_url(),
-            physical_path           = "/".join(context.getPhysicalPath()),
-            id                      = self.get_uploader_function_id(),
-            file_list_id            = self.get_file_list_id(),
-            name                    = self.get_uploader_id(),
-            size_limit              = self.field.size_limit and str(self.size_limit * 1024) or '',
-            xhr_size_limit          = self.field.size_limit and str(self.size_limit * 1024) or '0',
-            sim_upload_limit        = str(self.field.sim_upload_limit),
-            button_text             = _(u'Browse'),
-            delete_message          = _(u'Deleting... Please Wait.'),
-            draganddrop_text        = _(u'Drag and drop files to upload'),
-            msg_all_sucess          = _(u'All files uploaded with success.'),
-            msg_some_sucess         = _(u' files uploaded with success, '),
-            msg_some_errors         = _(u" uploads return an error."),
-            msg_failed              = _(u"Failed"),
-            error_try_again_wo      = _(u"please select files again without it."),
-            error_try_again         = _(u"please try again."),
-            error_empty_file        = _(u"This file is empty :"),
-            error_file_large        = _(u"This file is too large :"),
-            error_maxsize_is        = _(u"maximum file size is :"),
-            error_bad_ext           = _(u"This file has invalid extension :"),
-            error_onlyallowed       = _(u"Only allowed :"),
-            error_no_permission     = _(u"You don't have permission to add this content in this place."),
-            error_already_exists    = _(u"This file already exists with the same name on server :"),
-            error_zodb_conflict     = _(u"A data base conflict error happened when uploading this file :"),
-            error_server            = _(u"Server error, please contact support and/or try again."),
-            error_draft             = _(u"A draft could not be created, please contact support."),
+            actionURL                  = actionURL,
+            deleteURL                  = urllib.quote(widgetURL + '/@@multifile_delete_file'),
+            checkScriptURL             = urllib.quote(widgetURL + '/@@multifile_check_file'),
+            portalURL                  = portalURL,
+            contextURL                 = context.absolute_url(),
+            physicalPath               = "/".join(context.getPhysicalPath()),
+            typeupload                 = typeupload,
+            fieldName                  = self.field.__name__,
+            ID                         = self.getUploaderFunctionID(),
+            fileListID                 = self.getFileListID(),
+            name                       = self.getUploaderID(),
+            ticket                     = ticket,
+            multi                      = self.field.multi and 'true' or 'false',
+            sizeLimit                  = self.field.size_limit and str(self.size_limit * 1024) or '',
+            xhrSizeLimit               = self.field.size_limit and str(self.size_limit * 1024) or '0',
+            simUploadLimit             = str(self.field.sim_upload_limit),
+            buttonText                 = _(u'Browse'),
+            deleteMessage              = _(u'Deleting... Please Wait.'),
+            dragAndDropText            = _(u'Drag and drop files to upload'),
+            fileExtensions             = contentTypesInfos[0],
+            fileExtensionsList         = str(contentTypesInfos[1]),
+            fileDescription            = contentTypesInfos[2],
+            msgAllSuccess              = _(u'All files uploaded with success.'),
+            msgSomeSuccess             = _(u' files uploaded with success, '),
+            msgSomeErrors              = _(u" uploads return an error."),
+            msgFailed                  = _(u"Failed"),
+            errorTryAgainWo            = _(u"please select files again without it."),
+            errorTryAgain              = _(u"please try again."),
+            errorEmptyFile             = _(u"This file is empty :"),
+            errorFileLarge             = _(u"This file is too large :"),
+            errorMaxSizeIs             = _(u"maximum file size is :"),
+            errorBadExt                = _(u"This file has invalid extension :"),
+            errorOnlyAllowed           = _(u"Only allowed :"),
+            errorNoPermission          = _(u"You don't have permission to add this content in this place."),
+            errorAlreadyExists         = _(u"This file already exists with the same name on server :"),
+            errorZodbConflict          = _(u"A data base conflict error happened when uploading this file :"),
+            errorServer                = _(u"Server error, please contact support and/or try again."),
+            errorDraft                 = _(u"A draft could not be created, please contact support."),
         )
-
-        typeupload = session.get('typeupload', request.get('typeupload', ''))
-        settings['typeupload'] = typeupload
-
-        content_types_infos = self.content_types_infos(self.field.allowable_file_extensions)
-        settings['file_extensions'] = content_types_infos[0]
-        settings['file_extensions_list'] = str(content_types_infos[1])
-        settings['file_description'] = content_types_infos[2]
 
         return settings
 
-    def get_file_list_id(self):
+    def getFileListID(self):
         """Returns the id attribute for the files list
         """
         return 'multi-file-%s-list' % self.name.replace('.', '-')
 
-    def get_uploader_id(self):
+    def getUploaderID(self):
         """Returns the id attribute for the uploader div. This should
         be uniqe, also when using multiple widgets on the same page.
         """
         return 'multi-file-%s' % self.name.replace('.', '-')
-        #return self.get_uploader_function_id()
+        #return self.getUploaderFunctionID()
 
     # TODO:  Try to eliminate this method
-    def get_uploader_function_id(self):
+    def getUploaderFunctionID(self):
         """Returns a suitable id used to name javascript functions.
         """
         return 'multi_file_%s' % self.name.replace('.', '_')
@@ -282,7 +278,7 @@ class MultiFileWidget(multi.MultiWidget):
             valueDictionary[value.filename] = value
             valueMap[value.filename] = index
 
-        widget = self.widgets[valueMap.get(name)].__of__(self.better_context)
+        widget = self.widgets[valueMap.get(name)].__of__(self.betterContext)
 
         # fix some stuff, according to z3c.form.field.FieldWidgets.update
         widget.name = self.name + '.' + name

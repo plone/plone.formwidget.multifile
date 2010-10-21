@@ -4,8 +4,8 @@ ajax uploads"""
 MULTIFILE_INLINE_JS = """
     jQuery(document).ready(function() {
         jQuery('#%(name)s').multifile({
-            'deleteURL'     : '%(delete_url)s',
-            'deleteMessage' : '%(delete_message)s'
+            'deleteURL'     : '%(deleteURL)s',
+            'deleteMessage' : '%(deleteMessage)s'
         });
     });
 """
@@ -14,17 +14,18 @@ FLASH_UPLOAD_JS = """
     jQuery(document).ready(function() {
         jQuery('#%(name)s').uploadify({
             'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
-            'script'        : '%(action_url)s',
+            'script'        : '%(actionURL)s',
+            //'checkScript'   : '%(checkScriptURL)s',
             'fileDataName'  : 'qqfile',
             'cancelImg'     : '++resource++plone.formwidget.multifile/cancel.png',
-            'folder'        : '%(physical_path)s',
+            'folder'        : '%(physicalPath)s',
             'auto'          : true,
             'multi'         : %(multi)s,
-            'simUploadLimit': %(sim_upload_limit)s,
-            'sizeLimit'     : '%(size_limit)s',
-            'fileDesc'      : '%(file_description)s',
-            'fileExt'       : '%(file_extensions)s',
-            'buttonText'    : '%(button_text)s',
+            'simUploadLimit': %(simUploadLimit)s,
+            'sizeLimit'     : '%(sizeLimit)s',
+            'fileDesc'      : '%(fileDescription)s',
+            'fileExt'       : '%(fileExtensions)s',
+            'buttonText'    : '%(buttonText)s',
             'scriptAccess'  : 'sameDomain',
             'hideButton'    : false,
             'scriptData'    : {'ticket' : '%(ticket)s', 'typeupload' : '%(typeupload)s'},
@@ -37,54 +38,97 @@ FLASH_UPLOAD_JS = """
                 // TODO:  Do something to indicate the error
                 if( response.error ) { return false; }
 
-                jQuery('#%(file_list_id)s').append(jQuery(response.html));
+                jQuery('#%(fileListID)s').append(jQuery(response.html));
             }
         });
     });
 """
 
 XHR_UPLOAD_JS = """
-    createUploader_%(id)s= function(){
-        xhr_%(id)s = new qq.FileUploader({
+    createUploader_%(ID)s= function(){
+        xhr_%(ID)s = new qq.FileUploader({
             element: jQuery('#%(name)s')[0],
-            action: '%(action_url)s',
+            action: '%(actionURL)s',
             autoUpload: true,
             multi: %(multi)s,
             cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
 
-            onComplete: function (id, filename, responseJSON) {
-                jQuery('#%(file_list_id)s').append(jQuery(responseJSON.html));
+            onComplete: function (ID, filename, responseJSON) {
+                jQuery('#%(fileListID)s').append(jQuery(responseJSON.html));
 
-                var uploader = xhr_%(id)s;
-                MultiFileUpload.onUploadComplete(uploader, uploader._element, id, filename, responseJSON);
+                var uploader = xhr_%(ID)s;
+                MultiFileUpload.onUploadComplete(uploader, uploader._element, ID, filename, responseJSON);
             },
 
-            allowedExtensions: %(file_extensions_list)s,
-            sizeLimit: %(xhr_size_limit)s,
-            simUploadLimit: %(sim_upload_limit)s,
+            allowedExtensions: %(fileExtensionsList)s,
+            sizeLimit: %(xhrSizeLimit)s,
+            simUploadLimit: %(simUploadLimit)s,
             //template: '<div class="qq-uploader">' +
-            //          '<div class="qq-upload-drop-area"><span>%(draganddrop_text)s</span></div>' +
-            //          '<div class="qq-upload-button">%(button_text)s</div>' +
+            //          '<div class="qq-upload-drop-area"><span>%(dragAndDropText)s</span></div>' +
+            //          '<div class="qq-upload-button">%(buttonText)s</div>' +
             //          '<ul class="qq-upload-list"></ul>' +
             //          '</div>',
             fileTemplate: '<li>' +
                     '<a class="qq-upload-cancel" href="#">&nbsp;</a>' +
                     '<div class="qq-upload-infos"><span class="qq-upload-file"></span>' +
                     '<span class="qq-upload-spinner"></span>' +
-                    '<span class="qq-upload-failed-text">%(msg_failed)s</span></div>' +
+                    '<span class="qq-upload-failed-text">%(msgFailed)s</span></div>' +
                     '<div class="qq-upload-size"></div>' +
                 '</li>',
             messages: {
-                serverError: "%(error_server)s",
-                draftError: "%(error_draft)s",
-                serverErrorAlreadyExists: "%(error_already_exists)s {file}",
-                serverErrorZODBConflict: "%(error_zodb_conflict)s {file}, %(error_try_again)s",
-                serverErrorNoPermission: "%(error_no_permission)s",
-                typeError: "%(error_bad_ext)s {file}. %(error_onlyallowed)s {extensions}.",
-                sizeError: "%(error_file_large)s {file}, %(error_maxsize_is)s {sizeLimit}.",
-                emptyError: "%(error_empty_file)s {file}, %(error_try_again_wo)s"
+                serverError: "%(errorServer)s",
+                draftError: "%(errorDraft)s",
+                serverErrorAlreadyExists: "%(errorAlreadyExists)s {file}",
+                serverErrorZODBConflict: "%(errorZodbConflict)s {file}, %(errorTryAgain)s",
+                serverErrorNoPermission: "%(errorNoPermission)s",
+                typeError: "%(errorBadExt)s {file}. %(errorOnlyAllowed)s {extensions}.",
+                sizeError: "%(errorFileLarge)s {file}, %(errorMaxSizeIs)s {sizeLimit}.",
+                emptyError: "%(errorEmptyFile)s {file}, %(errorTryAgainWo)s"
             }
         });
     }
-    jQuery(document).ready(createUploader_%(id)s);
+    jQuery(document).ready(createUploader_%(ID)s);
+"""
+
+NADA = """
+List of vars used; for debug so we can remove unsed vars
+Ledgend:  B=Both, F=Flash Only, A=Ajax Only, N=None, M=Multifile
+            B actionURL
+            M deleteURL
+            F checkScriptURL
+            N portalURL
+            N contextURL
+            F physicalPath
+            F typeupload                 Not really used though
+            N fieldName
+            B ID
+            B fileListID
+            B name
+            F ticket
+            B multi
+            F sizeLimit
+            A xhrSizeLimit
+            B simUploadLimit
+            B buttonText
+            M deleteMessage
+            A dragAndDropText
+            F fileExtensions
+            A fileExtensionsList
+            F fileDescription
+            N msgAllSuccess
+            N msgSomeSuccess
+            N msgSomeErrors
+            A msgFailed
+            A errorTryAgainWo
+            A errorTryAgain
+            A errorEmptyFile
+            A errorFileLarge
+            A errorMaxSizeIs
+            A errorBadExt
+            A errorOnlyAllowed
+            A errorNoPermission
+            A errorAlreadyExists
+            A errorZodbConflict
+            A errorServer
+            A errorDraft
 """
