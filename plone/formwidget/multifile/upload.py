@@ -98,7 +98,7 @@ class MultiFileUpload(BrowserView):
                 fileData = FileUpload(aFieldStorage=FieldStorageStub(fileObject, {}, filename))
             except TypeError:
                 return json.dumps({u'error': u'serverError'})
-        elif not self.widget.field.use_flashupload:
+        elif not self.widget.field.useFlashUpload:
             # using classic form post method (MSIE<=8)
             fileData = self.request.get("qqfile", None)
             filename = getattr(fileData, 'filename', '').split("\\")[-1]
@@ -141,16 +141,18 @@ class MultiFileUpload(BrowserView):
 
             # Reset requestURL so file URL will be rendered properly
             self.request.URL = self.request.getURL()[0:(self.request.getURL().find('/', len(self.content.absolute_url()) + 1))]
+            import cgi
             responseJSON = {u'success'  : True,
                             u'filename' : newWidget.filename,
-                            u'html'     : self.widget.renderWidget(newWidget, int(index)),
+                            u'html'     : cgi.escape(self.widget.renderWidget(newWidget, int(index))),
                             u'counter'  : len(self.widget.widgets),
                         }
         else :
             responseJSON = {u'error': 'error'}
 
+        return json.dumps(responseJSON)
         # If iframe was used; wrap the response in a <script> tag or will get json parse errors
-        if self.request.HTTP_X_REQUESTED_WITH or self.widget.field.use_flashupload:
+        if self.request.HTTP_X_REQUESTED_WITH or self.widget.field.useFlashUpload:
             return json.dumps(responseJSON)
         else:
             return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
@@ -159,14 +161,14 @@ class MultiFileUpload(BrowserView):
         """ Checks to make sure falie length is less than allowable maximum
         size
         """
-        maxSize = int(self.widget.field.size_limit)
+        maxSize = int(self.widget.field.sizeLimit)
         if not maxSize :
             return 1
         #file_size = len(data.read()) / 1024
         data.seek(0, os.SEEK_END)
         fileSize = data.tell() / 1024
         data.seek(0, os.SEEK_SET)
-        maxSize = int(self.widget.field.size_limit)
+        maxSize = int(self.widget.field.sizeLimit)
         if fileSize <= maxSize:
             return 1
         return 0

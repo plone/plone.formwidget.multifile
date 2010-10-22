@@ -26,7 +26,7 @@ FLASH_UPLOAD_JS = """
             'folder'        : '%(physicalPath)s',
             'auto'          : true,
             'multi'         : %(multi)s,
-            'simUploadLimit': %(simUploadLimit)s,
+            'simUploadLimit': %(maxConnections)s,
             'sizeLimit'     : '%(sizeLimit)s',
             'fileDesc'      : '%(fileDescription)s',
             'fileExt'       : '%(fileExtensions)s',
@@ -43,7 +43,8 @@ FLASH_UPLOAD_JS = """
                 // TODO:  Do something to indicate the error
                 if( response.error ) { return false; }
 
-                jQuery('#%(fileListID)s').append(jQuery(response.html));
+                // unescape html before appending it
+                jQuery('#%(fileListID)s').append(jQuery("<div />").html(response.html).text())
             }
         });
 
@@ -55,52 +56,98 @@ FLASH_UPLOAD_JS = """
 
 XHR_UPLOAD_JS = """
 
-    jQuery(document).ready(function() {
-        // Override qq.UploadHandlerForm.prototype._getIframeContentJSON
-        jQuery(this).multifileOverrideFileUploaderIframeJSONHandler();
-    });
-
     createUploader_%(ID)s= function(){
         xhr_%(ID)s = new qq.FileUploader({
             element: jQuery('#%(name)s')[0],
+            debug : true,
             action: '%(actionURL)s',
-            autoUpload: true,
-            multi: %(multi)s,
-            cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
-            onComplete: function (ID, filename, responseJSON) {
-                jQuery('#%(fileListID)s').append(jQuery(responseJSON.html));
-
-                var uploader = xhr_%(ID)s;
-                jQuery(uploader._getItemByFileId(ID)).remove();
-            },
+            //button:
+            multiple: %(multi)s,
+            maxConnections: %(maxConnections)s,
             allowedExtensions: %(fileExtensionsList)s,
             sizeLimit: %(xhrSizeLimit)s,
-            simUploadLimit: %(simUploadLimit)s,
-            //template: '<div class="qq-uploader">' +
-            //          '<div class="qq-upload-drop-area"><span>%(dragAndDropText)s</span></div>' +
-            //          '<div class="qq-upload-button">%(buttonText)s</div>' +
-            //          '<ul class="qq-upload-list"></ul>' +
-            //          '</div>',
+            cancelImg: '++resource++plone.formwidget.multifile/cancel.png',
+            onSubmit: function(id, fileName){
+                var success = true;
+                jQuery.ajax({
+                    url: '%(checkScriptURL)s',
+                    data: {filename : fileName},
+                    dataType: 'json',
+                    type: 'POST',
+                    async: false,
+                    success: function(data) {
+                        if (data.filename) {
+                            var uploader = xhr_%(ID)s;
+                            uploader._addToList(id, fileName);
+                            jQuery(uploader._getItemByFileId(id)).addClass('qq-upload-fail');
+
+                            var message = uploader._options.messages['serverErrorAlreadyExists'];
+                            function r(name, replacement){ message = message.replace(name, replacement); }
+                            r('{file}', uploader._formatFileName(fileName));
+                            jQuery(uploader._getItemByFileId(id)).find('.qq-upload-failed-text').html(message);
+                            success = false;
+                        }
+                    }
+                });
+                return success;
+            },
+            //onProgress: function(id, fileName, loaded, total){},
+            //onCancel: function(id, fileName){},
+            onComplete: function (ID, filename, responseJSON) {
+                // unescape html before appending it
+                jQuery('#%(fileListID)s').append(jQuery("<div />").html(responseJSON.html).text())
+
+                var uploader = xhr_%(ID)s;
+                if (responseJSON.error) {
+                    // TODO move to multifile.js
+                    var message = uploader._options.messages[responseJSON.error];
+                    function r(name, replacement){ message = message.replace(name, replacement); }
+                    r('{file}', uploader._formatFileName(filename));
+                    r('{extensions}', uploader._options.allowedExtensions.join(', '));
+                    r('{sizeLimit}', uploader._formatSize(uploader._options.sizeLimit));
+                    r('{minSizeLimit}', uploader._formatSize(uploader._options.minSizeLimit));
+                    jQuery(uploader._getItemByFileId(ID)).find('.qq-upload-failed-text').html(message);
+                    jQuery(uploader._getItemByFileId(ID)).prepend('<a class="qq-error-cancel" href="#">&nbsp;</a>');
+                } else {
+                    jQuery(uploader._getItemByFileId(ID)).remove();
+                }
+            },
+            messages: {
+                serverError:              "%(errorServer)s",
+                draftError:               "%(errorDraft)s",
+                serverErrorAlreadyExists: "%(errorAlreadyExists)s {file}",
+                serverErrorZODBConflict:  "%(errorZodbConflict)s {file}, %(errorTryAgain)s",
+                serverErrorNoPermission:  "%(errorNoPermission)s",
+                typeError:                "%(errorBadExt)s {file}. %(errorOnlyAllowed)s {extensions}.",
+                sizeError:                "%(errorFileLarge)s {file}, %(errorMaxSizeIs)s {sizeLimit}.",
+                emptyError:               "%(errorEmptyFile)s {file}, %(errorTryAgainWo)s",
+                minSizeError:             "{file} is too small, minimum file size is {minSizeLimit}.",
+                onLeave:                  "The files are being uploaded, if you leave now the upload will be cancelled.",
+            },
+            //listElement: null,
+            template: '<div class="qq-uploader">' +
+                      '<div class="qq-upload-drop-area"><span>%(dragAndDropText)s</span></div>' +
+                      '<div class="qq-upload-button">%(buttonText)s</div>' +
+                      '<ul class="qq-upload-list"></ul>' +
+                      '</div>',
             fileTemplate: '<li>' +
                     '<a class="qq-upload-cancel" href="#">&nbsp;</a>' +
                     '<div class="qq-upload-infos"><span class="qq-upload-file"></span>' +
                     '<span class="qq-upload-spinner"></span>' +
-                    '<span class="qq-upload-failed-text">%(msgFailed)s</span></div>' +
-                    '<div class="qq-upload-size"></div>' +
+                    '<span class="qq-upload-size"></span></div>' +
+                    '<div class="qq-upload-failed-text">%(msgFailed)s</div>' +
                 '</li>',
-            messages: {
-                serverError: "%(errorServer)s",
-                draftError: "%(errorDraft)s",
-                serverErrorAlreadyExists: "%(errorAlreadyExists)s {file}",
-                serverErrorZODBConflict: "%(errorZodbConflict)s {file}, %(errorTryAgain)s",
-                serverErrorNoPermission: "%(errorNoPermission)s",
-                typeError: "%(errorBadExt)s {file}. %(errorOnlyAllowed)s {extensions}.",
-                sizeError: "%(errorFileLarge)s {file}, %(errorMaxSizeIs)s {sizeLimit}.",
-                emptyError: "%(errorEmptyFile)s {file}, %(errorTryAgainWo)s"
-            }
+            showMessage: function(message){
+                //alert(message);
+            },
         });
     }
     jQuery(document).ready(createUploader_%(ID)s);
+
+    jQuery(document).ready(function() {
+        // Attach an qq-error-cancel click binding event
+        jQuery('#%(name)s').multifileFileUploaderBindErrorCancel();
+    });
 """
 
 NADA = """
@@ -121,7 +168,7 @@ Ledgend:  B=Both, F=Flash Only, A=Ajax Only, N=None, M=Multifile
             B multi
             F sizeLimit
             A xhrSizeLimit
-            B simUploadLimit
+            B maxConnections
             B buttonText
             M deleteMessage
             A dragAndDropText

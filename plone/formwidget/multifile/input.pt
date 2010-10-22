@@ -31,11 +31,11 @@
          tal:omit-tag="not:view/editing"
          class="main-uploader">
 
-         <div class="qq-uploader">
+         <!--div class="qq-uploader">
            <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>
            <div class="qq-upload-button">Browse for a file</div>
            <ul class="qq-upload-list"></ul>
-         </div>
+         </div-->
 
     </div>
 

@@ -95,29 +95,13 @@ if(jQuery)(
                 });
             });
         },
-        // Override qq.UploadHandlerForm.prototype._getIframeContentJSON
-        // Allows json response to be embedded in <script> tags, otherwise
-        // html response will fail unless html was previously encoded
-        // Submitted this 'fix' as a request so this override may be able to be
-        // removed in future
-        multifileOverrideFileUploaderIframeJSONHandler:function() {
-            qq.UploadHandlerForm.prototype._getIframeContentJSON = function(iframe){
-                // iframe.contentWindow.document - for IE<7
-                var doc = iframe.contentDocument ? iframe.contentDocument: iframe.contentWindow.document,
-                    response;
-
-                // XXX: Added for multifile, since returned HTML in response does not parse
-                // correctly when added directly to an iframe body
-                responseText = doc.getElementById('json-response') ? doc.getElementById('json-response').innerHTML : doc.body.innerHTML;
-                try{
-                    //response = eval("(" + doc.body.innerHTML + ")");
-                    response = jQuery.parseJSON( responseText );
-                } catch(err){
-                    response = {};
-                }
-
-                return response;
-            }
-        }
+        multifileFileUploaderBindErrorCancel:function() {
+            jQuery(this).each(function() {
+                jQuery('.qq-error-cancel').live('click', function(event) {
+                    event.preventDefault();
+                    jQuery(this).closest('.qq-upload-fail').remove();
+                });
+            });
+        },
     })
 })(jQuery);

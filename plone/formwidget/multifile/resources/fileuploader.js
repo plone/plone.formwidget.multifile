@@ -2,56 +2,501 @@
  * http://github.com/valums/file-uploader
  *
  * Multiple file upload component with progress-bar, drag-and-drop.
- * © 2010 Andrew Valums andrew(at)valums.com
+ * © 2010 Andrew Valums ( andrew(at)valums.com )
  *
  * Licensed under GNU GPL 2 or later, see license.txt.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+//
+// Helper functions
+//
 
 var qq = qq || {};
 
 /**
- * Class that creates our multiple file upload widget
+ * Adds all missing properties from second obj to first obj
+ */
+qq.extend = function(first, second){
+    for (var prop in second){
+        first[prop] = second[prop];
+    }
+};
+
+/**
+ * Searches for a given element in the array, returns -1 if it is not present.
+ * @param {Number} [from] The index at which to begin the search
+ */
+qq.indexOf = function(arr, elt, from){
+    if (arr.indexOf) return arr.indexOf(elt, from);
+
+    from = from || 0;
+    var len = arr.length;
+
+    if (from < 0) from += len;
+
+    for (; from < len; from++){
+        if (from in arr && arr[from] === elt){
+            return from;
+        }
+    }
+    return -1;
+};
+
+qq.getUniqueId = (function(){
+    var id = 0;
+    return function(){ return id++; };
+})();
+
+//
+// Events
+
+qq.attach = function(element, type, fn){
+    if (element.addEventListener){
+        element.addEventListener(type, fn, false);
+    } else if (element.attachEvent){
+        element.attachEvent('on' + type, fn);
+    }
+};
+qq.detach = function(element, type, fn){
+    if (element.removeEventListener){
+        element.removeEventListener(type, fn, false);
+    } else if (element.attachEvent){
+        element.detachEvent('on' + type, fn);
+    }
+};
+
+qq.preventDefault = function(e){
+    if (e.preventDefault){
+        e.preventDefault();
+    } else{
+        e.returnValue = false;
+    }
+};
+
+//
+// Node manipulations
+
+/**
+ * Insert node a before node b.
+ */
+qq.insertBefore = function(a, b){
+    b.parentNode.insertBefore(a, b);
+};
+qq.remove = function(element){
+    element.parentNode.removeChild(element);
+};
+
+qq.contains = function(parent, descendant){
+    // compareposition returns false in this case
+    if (parent == descendant) return true;
+
+    if (parent.contains){
+        return parent.contains(descendant);
+    } else {
+        return !!(descendant.compareDocumentPosition(parent) & 8);
+    }
+};
+
+/**
+ * Creates and returns element from html string
+ * Uses innerHTML to create an element
+ */
+qq.toElement = (function(){
+    var div = document.createElement('div');
+    return function(html){
+        div.innerHTML = html;
+        var element = div.firstChild;
+        div.removeChild(element);
+        return element;
+    };
+})();
+
+//
+// Node properties and attributes
+
+/**
+ * Sets styles for an element.
+ * Fixes opacity in IE6-8.
+ */
+qq.css = function(element, styles){
+    if (styles.opacity != null){
+        if (typeof element.style.opacity != 'string' && typeof(element.filters) != 'undefined'){
+            styles.filter = 'alpha(opacity=' + Math.round(100 * styles.opacity) + ')';
+        }
+    }
+    qq.extend(element.style, styles);
+};
+qq.hasClass = function(element, name){
+    var re = new RegExp('(^| )' + name + '( |$)');
+    return re.test(element.className);
+};
+qq.addClass = function(element, name){
+    if (!qq.hasClass(element, name)){
+        element.className += ' ' + name;
+    }
+};
+qq.removeClass = function(element, name){
+    var re = new RegExp('(^| )' + name + '( |$)');
+    element.className = element.className.replace(re, ' ').replace(/^\s+|\s+$/g, "");
+};
+qq.setText = function(element, text){
+    element.innerText = text;
+    element.textContent = text;
+};
+
+//
+// Selecting elements
+
+qq.children = function(element){
+    var children = [],
+    child = element.firstChild;
+
+    while (child){
+        if (child.nodeType == 1){
+            children.push(child);
+        }
+        child = child.nextSibling;
+    }
+
+    return children;
+};
+
+qq.getByClass = function(element, className){
+    if (element.querySelectorAll){
+        return element.querySelectorAll('.' + className);
+    }
+
+    var result = [];
+    var candidates = element.getElementsByTagName("*");
+    var len = candidates.length;
+
+    for (var i = 0; i < len; i++){
+        if (qq.hasClass(candidates[i], className)){
+            result.push(candidates[i]);
+        }
+    }
+    return result;
+};
+
+/**
+ * obj2url() takes a json-object as argument and generates
+ * a querystring. pretty much like jQuery.param()
+ *
+ * how to use:
+ *
+ *    `qq.obj2url({a:'b',c:'d'},'http://any.url/upload?otherParam=value');`
+ *
+ * will result in:
+ *
+ *    `http://any.url/upload?otherParam=value&a=b&c=d`
+ *
+ * @param  Object JSON-Object
+ * @param  String current querystring-part
+ * @return String encoded querystring
+ */
+qq.obj2url = function(obj, temp, prefixDone){
+    var uristrings = [],
+        prefix = '&',
+        add = function(nextObj, i){
+            var nextTemp = temp
+                ? (/\[\]$/.test(temp)) // prevent double-encoding
+                   ? temp
+                   : temp+'['+i+']'
+                : i;
+            if ((nextTemp != 'undefined') && (i != 'undefined')) {
+                uristrings.push(
+                    (typeof nextObj === 'object')
+                        ? qq.obj2url(nextObj, nextTemp, true)
+                        : (Object.prototype.toString.call(nextObj) === '[object Function]')
+                            ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj())
+                            : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj)
+                );
+            }
+        };
+
+    if (!prefixDone && temp) {
+      prefix = (/\?/.test(temp)) ? (/\?$/.test(temp)) ? '' : '&' : '?';
+      uristrings.push(temp);
+      uristrings.push(qq.obj2url(obj));
+    } else if ((Object.prototype.toString.call(obj) === '[object Array]') && (typeof obj != 'undefined') ) {
+        // we wont use a for-in-loop on an array (performance)
+        for (var i = 0, len = obj.length; i < len; ++i){
+            add(obj[i], i);
+        }
+    } else if ((typeof obj != 'undefined') && (obj !== null) && (typeof obj === "object")){
+        // for anything else but a scalar, we will use for-in-loop
+        for (var i in obj){
+            add(obj[i], i);
+        }
+    } else {
+        uristrings.push(encodeURIComponent(temp) + '=' + encodeURIComponent(obj));
+    }
+
+    return uristrings.join(prefix)
+                     .replace(/^&/, '')
+                     .replace(/%20/g, '+');
+};
+
+//
+//
+// Uploader Classes
+//
+//
+
+var qq = qq || {};
+
+/**
+ * Creates upload button, validates upload, but doesn't create file list or dd.
+ */
+qq.FileUploaderBasic = function(o){
+    this._options = {
+        // set to true to see the server response
+        debug: false,
+        action: '/server/upload',
+        params: {},
+        button: null,
+        multiple: true,
+        maxConnections: 3,
+        // validation
+        allowedExtensions: [],
+        sizeLimit: 0,
+        minSizeLimit: 0,
+        // events
+        // return false to cancel submit
+        onSubmit: function(id, fileName){},
+        onProgress: function(id, fileName, loaded, total){},
+        onComplete: function(id, fileName, responseJSON){},
+        onCancel: function(id, fileName){},
+        // messages
+        messages: {
+            typeError: "{file} has invalid extension. Only {extensions} are allowed.",
+            sizeError: "{file} is too large, maximum file size is {sizeLimit}.",
+            minSizeError: "{file} is too small, minimum file size is {minSizeLimit}.",
+            emptyError: "{file} is empty, please select files again without it.",
+            onLeave: "The files are being uploaded, if you leave now the upload will be cancelled."
+        },
+        showMessage: function(message){
+            alert(message);
+        }
+    };
+    qq.extend(this._options, o);
+
+    // number of files being uploaded
+    this._filesInProgress = 0;
+    this._handler = this._createUploadHandler();
+
+    if (this._options.button){
+        this._button = this._createUploadButton(this._options.button);
+    }
+
+    this._preventLeaveInProgress();
+};
+
+qq.FileUploaderBasic.prototype = {
+    setParams: function(params){
+        this._options.params = params;
+    },
+    getInProgress: function(){
+        return this._filesInProgress;
+    },
+    _createUploadButton: function(element){
+        var self = this;
+
+        return new qq.UploadButton({
+            element: element,
+            multiple: this._options.multiple && qq.UploadHandlerXhr.isSupported(),
+            onChange: function(input){
+                self._onInputChange(input);
+            }
+        });
+    },
+    _createUploadHandler: function(){
+        var self = this,
+            handlerClass;
+
+        if(qq.UploadHandlerXhr.isSupported()){
+            handlerClass = 'UploadHandlerXhr';
+        } else {
+            handlerClass = 'UploadHandlerForm';
+        }
+
+        var handler = new qq[handlerClass]({
+            debug: this._options.debug,
+            action: this._options.action,
+            maxConnections: this._options.maxConnections,
+            onProgress: function(id, fileName, loaded, total){
+                self._onProgress(id, fileName, loaded, total);
+                self._options.onProgress(id, fileName, loaded, total);
+            },
+            onComplete: function(id, fileName, result){
+                self._onComplete(id, fileName, result);
+                self._options.onComplete(id, fileName, result);
+            },
+            onCancel: function(id, fileName){
+                self._onCancel(id, fileName);
+                self._options.onCancel(id, fileName);
+            }
+        });
+
+        return handler;
+    },
+    _preventLeaveInProgress: function(){
+        var self = this;
+
+        qq.attach(window, 'beforeunload', function(e){
+            if (!self._filesInProgress){return;}
+
+            var e = e || window.event;
+            // for ie, ff
+            e.returnValue = self._options.messages.onLeave;
+            // for webkit
+            return self._options.messages.onLeave;
+        });
+    },
+    _onSubmit: function(id, fileName){
+        this._filesInProgress++;
+    },
+    _onProgress: function(id, fileName, loaded, total){
+    },
+    _onComplete: function(id, fileName, result){
+        this._filesInProgress--;
+        if (result.error){
+            this._options.showMessage(result.error);
+        }
+    },
+    _onCancel: function(id, fileName){
+        this._filesInProgress--;
+    },
+    _onInputChange: function(input){
+        if (this._handler instanceof qq.UploadHandlerXhr){
+            this._uploadFileList(input.files);
+        } else {
+            if (this._validateFile(input)){
+                this._uploadFile(input);
+            }
+        }
+        this._button.reset();
+    },
+    _uploadFileList: function(files){
+        for (var i=0; i<files.length; i++){
+            if ( !this._validateFile(files[i])){
+                return;
+            }
+        }
+
+        for (var i=0; i<files.length; i++){
+            this._uploadFile(files[i]);
+        }
+    },
+    _uploadFile: function(fileContainer){
+        var id = this._handler.add(fileContainer);
+        var fileName = this._handler.getName(id);
+
+        if (this._options.onSubmit(id, fileName) !== false){
+            this._onSubmit(id, fileName);
+            this._handler.upload(id, this._options.params);
+        }
+    },
+    _validateFile: function(file){
+        var name, size;
+
+        if (file.value){
+            // it is a file input
+            // get input value and remove path to normalize
+            name = file.value.replace(/.*(\/|\\)/, "");
+        } else {
+            // fix missing properties in Safari
+            name = file.fileName != null ? file.fileName : file.name;
+            size = file.fileSize != null ? file.fileSize : file.size;
+        }
+
+        if (! this._isAllowedExtension(name)){
+            this._error('typeError', name);
+            return false;
+
+        } else if (size === 0){
+            this._error('emptyError', name);
+            return false;
+
+        } else if (size && this._options.sizeLimit && size > this._options.sizeLimit){
+            this._error('sizeError', name);
+            return false;
+
+        } else if (size && size < this._options.minSizeLimit){
+            this._error('minSizeError', name);
+            return false;
+        }
+
+        return true;
+    },
+    _error: function(code, fileName){
+        var message = this._options.messages[code];
+        function r(name, replacement){ message = message.replace(name, replacement); }
+
+        r('{file}', this._formatFileName(fileName));
+        r('{extensions}', this._options.allowedExtensions.join(', '));
+        r('{sizeLimit}', this._formatSize(this._options.sizeLimit));
+        r('{minSizeLimit}', this._formatSize(this._options.minSizeLimit));
+
+        this._options.showMessage(message);
+    },
+    _formatFileName: function(name){
+        if (name.length > 33){
+            name = name.slice(0, 19) + '...' + name.slice(-13);
+        }
+        return name;
+    },
+    _isAllowedExtension: function(fileName){
+        var ext = (-1 !== fileName.indexOf('.')) ? fileName.replace(/.*[.]/, '').toLowerCase() : '';
+        var allowed = this._options.allowedExtensions;
+
+        if (!allowed.length){return true;}
+
+        for (var i=0; i<allowed.length; i++){
+            if (allowed[i].toLowerCase() == ext){ return true;}
+        }
+
+        return false;
+    },
+    _formatSize: function(bytes){
+        var i = -1;
+        do {
+            bytes = bytes / 1024;
+            i++;
+        } while (bytes > 99);
+
+        return Math.max(bytes, 0.1).toFixed(1) + ['kB', 'MB', 'GB', 'TB', 'PB', 'EB'][i];
+    }
+};
+
+
+/**
+ * Class that creates upload widget with drag-and-drop and file list
+ * @inherits qq.FileUploaderBasic
  */
 qq.FileUploader = function(o){
-    this._options = {
-        // container element DOM node (ex. $(selector)[0] for jQuery users)
+    // call parent constructor
+    qq.FileUploaderBasic.apply(this, arguments);
+
+    // additional options
+    qq.extend(this._options, {
         element: null,
-        // url of the server-side upload script, should be on the same domain
-        action: '/server/upload',
-        // additional data to send, name-value pairs
-        params: {},
-        // ex. ['jpg', 'jpeg', 'png', 'gif'] or []
-        allowedExtensions: [],
-        // size limit in bytes, 0 - no limit
-        // this option isn't supported in all browsers
-        sizeLimit: 0,
-        // method executed after selection and before upload
-        onAfterSelect: function(id, fileName){},
-        // if autoUpload is set to false nothing is done
-        // after selection excepted onAfterSelect method
-        autoUpload: true,
-        // simultnaeous uploads limit (2 by default)
-        simUploadLimit: 2,
-        onSubmit: function(id, fileName){},
-        onComplete: function(id, fileName, responseJSON){},
-        //
-        // UI customizations
+        // if set, will be used instead of qq-upload-list in template
+        listElement: null,
+
         template: '<div class="qq-uploader">' +
                 '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
-                '<div class="qq-upload-button">Browse for a file</div>' +
+                '<div class="qq-upload-button">Upload a file</div>' +
                 '<ul class="qq-upload-list"></ul>' +
              '</div>',
 
         // template for one item in file list
         fileTemplate: '<li>' +
-                '<a class="qq-upload-cancel" href="#">&nbsp;</a>' +
-                '<div class="qq-upload-infos"><span class="qq-upload-file"></span>' +
+                '<span class="qq-upload-file"></span>' +
                 '<span class="qq-upload-spinner"></span>' +
-                '<span class="qq-upload-failed-text">Failed</span></div>' +
-                '<div class="qq-upload-size"></div>' +
+                '<span class="qq-upload-size"></span>' +
+                '<a class="qq-upload-cancel" href="#">Cancel</a>' +
+                '<span class="qq-upload-failed-text">Failed</span>' +
             '</li>',
 
         classes: {
@@ -70,396 +515,129 @@ qq.FileUploader = function(o){
             // used in css to hide progress spinner
             success: 'qq-upload-success',
             fail: 'qq-upload-fail'
-        },
-        messages: {
-            //serverError: "Some files were not uploaded, please contact support and/or try again.",
-            typeError: "{file} has invalid extension. Only {extensions} are allowed.",
-            sizeError: "{file} is too large, maximum file size is {sizeLimit}.",
-            emptyError: "{file} is empty, please select files again without it."
-        },
-        showMessage: function(message){
-            alert(message);
-        },
-        debugMode: false
-    };
-
+        }
+    });
+    // overwrite options with user supplied
     qq.extend(this._options, o);
 
     this._element = this._options.element;
+    this._element.innerHTML = this._options.template;
+    this._listElement = this._options.listElement || this._find(this._element, 'list');
 
-    if (this._element.nodeType != 1){
-        throw new Error('element param of FileUploader should be dom node');
-    }
-
-    base_template  =  this._options.template;
-    debug_template = '<div class="qq-upload-debug">' +
-                     '  <strong>Current Uploads : </strong><span class="qq-upload-debug-curruploads"></span>' +
-                     '</div>';
-    if (this._options.debugMode) base_template = base_template + debug_template;
-    this._element.innerHTML = base_template;
-
-
-    // number of files being uploaded
-    this._filesInProgress = 0;
-
-    // easier access
     this._classes = this._options.classes;
 
-    this._handler = this._createUploadHandler();
-
-    this._debugConsole = this.getDebugConsole();
+    this._button = this._createUploadButton(this._find(this._element, 'button'));
 
     this._bindCancelEvent();
-
-    var self = this;
-    this._button = new qq.UploadButton({
-        element: this._getElement('button'),
-        multiple: qq.UploadHandlerXhr.isSupported(),
-        onChange: function(input){
-            self._onInputChange(input);
-        }
-    });
-
     this._setupDragDrop();
 };
 
-qq.FileUploader.prototype = {
-    setParams: function(params){
-        this._options.params = params;
-    },
-    getDebugConsole: function(){
-        return qq.getByClass(this._element, 'qq-upload-debug')[0];
-    },
-    logDebug: function(type, logcontent) {
-       blocdebug = qq.getByClass(this._debugConsole, 'qq-upload-debug-'+type);
-       if (blocdebug) qq.setText(blocdebug[0], logcontent);
-    },
-    /**
-     * Returns true if some files are being uploaded, false otherwise
-     */
-    isUploading: function(){
-        return !!this._filesInProgress;
-    },
+// inherit from Basic Uploader
+qq.extend(qq.FileUploader.prototype, qq.FileUploaderBasic.prototype);
+
+qq.extend(qq.FileUploader.prototype, {
     /**
      * Gets one of the elements listed in this._options.classes
-     *
-     * First optional element is root for search,
-     * this._element is default value.
-     *
-     * Usage
-     *  1. this._getElement('button');
-     *  2. this._getElement(item, 'file');
      **/
-    _getElement: function(parent, type){
-        if (typeof parent == 'string'){
-            // parent was not passed
-            type = parent;
-            parent = this._element;
-        }
-
+    _find: function(parent, type){
         var element = qq.getByClass(parent, this._options.classes[type])[0];
-
         if (!element){
             throw new Error('element not found ' + type);
         }
 
         return element;
     },
-    _error: function(code, fileName, id){
-        var message = this._options.messages[code];
-        message = message.replace('{file}', this._formatFileName(fileName));
-        message = message.replace('{extensions}', this._options.allowedExtensions.join(', '));
-        message = message.replace('{sizeLimit}', this._formatSize(this._options.sizeLimit));
-        // global alert message on client error selection
-        if (typeof id=='undefined') this._options.showMessage(message);
-        else {
-            var item = this._getItemByFileId(id);
-            var diverror = document.createElement("div");
-            item.appendChild(diverror);
-            eclass = document.createAttribute("class");
-            eclass.nodeValue = "server-error";
-            diverror.setAttributeNode(eclass);
-            diverror.innerText = message;
-            diverror.textContent = message;
-        }
-    },
-    _formatFileName: function(name){
-        if (name.length > 33){
-            name = name.slice(0, 19) + '...' + name.slice(-13);
-        }
-        return name;
-    },
-    _isAllowedExtension: function(fileName){
-        var ext = (-1 !== fileName.indexOf('.')) ? fileName.replace(/.*[.]/, '').toLowerCase() : '';
-        var allowed = this._options.allowedExtensions;
-
-        if (!allowed.length){return true;}
-
-        for (var i=0; i<allowed.length; i++){
-            if (allowed[i].toLowerCase() == ext){
-                return true;
-            }
-        }
-
-        return false;
-    },
     _setupDragDrop: function(){
-        function isValidDrag(e){
-            var dt = e.dataTransfer,
-                // do not check dt.types.contains in webkit, because it crashes safari 4
-                isWebkit = navigator.userAgent.indexOf("AppleWebKit") > -1;
-
-            // dt.effectAllowed is none in Safari 5
-            // dt.types.contains check is for firefox
-            return dt && dt.effectAllowed != 'none' &&
-                (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
-        }
-
         var self = this,
-            dropArea = this._getElement('drop');
+            dropArea = this._find(this._element, 'drop');
+
+        var dz = new qq.UploadDropZone({
+            element: dropArea,
+            onEnter: function(e){
+                qq.addClass(dropArea, self._classes.dropActive);
+                e.stopPropagation();
+            },
+            onLeave: function(e){
+                e.stopPropagation();
+            },
+            onLeaveNotDescendants: function(e){
+                qq.removeClass(dropArea, self._classes.dropActive);
+            },
+            onDrop: function(e){
+                dropArea.style.display = 'none';
+                qq.removeClass(dropArea, self._classes.dropActive);
+                self._uploadFileList(e.dataTransfer.files);
+            }
+        });
 
         dropArea.style.display = 'none';
 
-        var hideTimeout;
         qq.attach(document, 'dragenter', function(e){
-            e.preventDefault();
+            if (!dz._isValidFileDrag(e)) return;
+
+            dropArea.style.display = 'block';
         });
-
-        qq.attach(document, 'dragover', function(e){
-            if (isValidDrag(e)){
-
-                if (hideTimeout){
-                    clearTimeout(hideTimeout);
-                }
-
-                if (dropArea == e.target || qq.contains(dropArea,e.target)){
-                    var effect = e.dataTransfer.effectAllowed;
-                    if (effect == 'move' || effect == 'linkMove'){
-                        e.dataTransfer.dropEffect = 'move'; // for FF (only move allowed)
-                    } else {
-                        e.dataTransfer.dropEffect = 'copy'; // for Chrome
-                    }
-                    qq.addClass(dropArea, self._classes.dropActive);
-                    e.stopPropagation();
-                } else {
-                    dropArea.style.display = 'block';
-                    e.dataTransfer.dropEffect = 'none';
-                }
-
-                e.preventDefault();
-            }
-        });
-
         qq.attach(document, 'dragleave', function(e){
-            if (isValidDrag(e)){
+            if (!dz._isValidFileDrag(e)) return;
 
-                if (dropArea == e.target || qq.contains(dropArea,e.target)){
-                    qq.removeClass(dropArea, self._classes.dropActive);
-                    e.stopPropagation();
-                } else {
-
-                    if (hideTimeout){
-                        clearTimeout(hideTimeout);
-                    }
-
-                    hideTimeout = setTimeout(function(){
-                        dropArea.style.display = 'none';
-                    }, 77);
-                }
+            var relatedTarget = document.elementFromPoint(e.clientX, e.clientY);
+            // only fire when leaving document out
+            if ( ! relatedTarget || relatedTarget.nodeName == "HTML"){
+                dropArea.style.display = 'none';
             }
         });
-
-        qq.attach(dropArea, 'drop', function(e){
-            dropArea.style.display = 'none';
-            self._addSelection(e.dataTransfer.files);
-            e.preventDefault();
-        });
     },
-    _createUploadHandler: function(){
-        var self = this,
-            handlerClass;
+    _onSubmit: function(id, fileName){
+        qq.FileUploaderBasic.prototype._onSubmit.apply(this, arguments);
+        this._addToList(id, fileName);
+    },
+    _onProgress: function(id, fileName, loaded, total){
+        qq.FileUploaderBasic.prototype._onProgress.apply(this, arguments);
 
-        if(qq.UploadHandlerXhr.isSupported()){
-            handlerClass = 'UploadHandlerXhr';
+        var item = this._getItemByFileId(id);
+        var size = this._find(item, 'size');
+        size.style.display = 'inline';
+
+        var text;
+        if (loaded != total){
+            text = Math.round(loaded / total * 100) + '% from ' + this._formatSize(total);
         } else {
-            handlerClass = 'UploadHandlerForm';
+            text = this._formatSize(total);
         }
 
-        var handler = new qq[handlerClass]({
-            action: this._options.action,
-            onProgress: function(id, fileName, loaded, total){
-                // is only called for xhr upload
-                self._updateProgress(id, loaded, total);
-            },
-            onComplete: function(id, fileName, result){
-                // mark completed
-                var item = self._getItemByFileId(id);
-                qq.remove(self._getElement(item, 'spinner'));
-
-                if (result.success){
-                    qq.remove(self._getElement(item, 'cancel'));
-                    qq.addClass(item, self._classes.success);
-                } else {
-                    qq.addClass(item, self._classes.fail);
-
-                    if (result.error){
-                       self._error(result.error, fileName, id);
-                    }
-                }
-                self._filesInProgress--;
-                self._options.onComplete(id, fileName, result);
-            }
-        });
-
-        return handler;
+        qq.setText(size, text);
     },
-    _onInputChange: function(input){
+    _onComplete: function(id, fileName, result){
+        qq.FileUploaderBasic.prototype._onComplete.apply(this, arguments);
 
-        if (this._handler instanceof qq.UploadHandlerXhr){
+        // mark completed
+        var item = this._getItemByFileId(id);
+        qq.remove(this._find(item, 'cancel'));
+        qq.remove(this._find(item, 'spinner'));
 
-            this._addSelection(input.files);
-
+        if (result.success){
+            qq.addClass(item, this._classes.success);
         } else {
-
-            if (this._validateFile(input)){
-                this._addFile(input);
-            }
-
+            qq.addClass(item, this._classes.fail);
         }
-
-        this._button.reset();
-    },
-    _addSelection: function(files) {
-        var valid = true;
-        var i = files.length;
-        while (i--){
-            if (!this._validateFile(files[i])){
-                valid = false;
-                break;
-            }
-        }
-        if (valid){
-            var i = files.length;
-            while (i--){
-                this._addFile(files[i]);
-            }
-        }
-    },
-    _addFile: function(file) {
-        var id = this._handler.add(file);
-        var name = this._handler.getName(id);
-        this._options.onSubmit(id, name);
-        this._addToList(id, name);
-        if (this._options.autoUpload) {
-            this._queueUpload(id, this._options.params);
-        }
-        else this._options.onAfterSelect(file, id);
-    },
-    _uploadAll: function() {
-        var allfiles = this._handler._files;
-        for ( var id = 0; id < allfiles.length; id++ ) {
-            if (allfiles[id]) {
-                this._queueUpload(id, this._options.params);
-            }
-        }
-    },
-    _queueUpload: function(id, params) {
-        var simUploadLimit = this._options.simUploadLimit;
-        if (this._options.debugMode) this.logDebug('curruploads', this._filesInProgress);
-        //alert(simUploadLimit + ' - ' + this._filesInProgress);
-        if (this._filesInProgress < simUploadLimit || !simUploadLimit) {
-            this._filesInProgress++;
-            if (this._handler instanceof qq.UploadHandlerXhr) var uid=id;
-            else if (typeof id=='number') {
-                var uid = 'qq-upload-handler-iframe' + id;
-            }
-            else  var uid = id;
-            var item = this._getItemByFileId(uid);
-            var spinner = this._getElement(item, 'spinner');
-            qq.css(spinner, {'display':'inline-block'});
-            this._handler.upload(id, params);
-        }
-        else {
-            var self = this;
-            window.setTimeout(function(){self._queueUpload(id, params)}, 100);}
-    },
-    _cancelAll: function() {
-        var allfiles = this._handler._files;
-        for ( var id = 0; id < allfiles.length; id++ ) {
-            if (allfiles[id]) this._handler.cancel(id);
-        }
-    },
-    _validateFile: function(file){
-        var name,size;
-
-        if (file.value){
-            // it is a file input
-            // get input value and remove path to normalize
-            name = file.value.replace(/.*(\/|\\)/, "");
-        } else {
-            // fix missing properties in Safari
-            name = file.fileName != null ? file.fileName : file.name;
-            size = file.fileSize != null ? file.fileSize : file.size;
-        }
-
-        if (! this._isAllowedExtension(name)){
-            this._error('typeError',name);
-            return false;
-
-        } else if (size === 0){
-            this._error('emptyError',name);
-            return false;
-
-        } else if (size && this._options.sizeLimit && size > this._options.sizeLimit){
-            this._error('sizeError',name);
-            return false;
-        }
-
-        return true;
     },
     _addToList: function(id, fileName){
         var item = qq.toElement(this._options.fileTemplate);
         item.qqFileId = id;
 
-        var fileElement = this._getElement(item, 'file');
+        var fileElement = this._find(item, 'file');
         qq.setText(fileElement, this._formatFileName(fileName));
+        this._find(item, 'size').style.display = 'none';
 
-        this._getElement('list').appendChild(item);
-        // not the good place
-        //this._filesInProgress++;
-    },
-    _updateProgress: function(id, loaded, total){
-        var item = this._getItemByFileId(id);
-        var size = this._getElement(item, 'size');
-        var text1;
-        var text2;
-        if (loaded != total){
-            text1 = Math.round(loaded / total * 100);
-        } else {
-            text1 = 100;
-        }
-        text2 = '&nbsp;' + this._formatSize(total);
-        qq.setProgressBar(size, text1, text2);
-    },
-    _formatSize: function(bytes){
-        var i = -1;
-        do {
-            bytes = bytes / 1024;
-            i++;
-        } while (bytes > 99);
-
-        return Math.max(bytes, 0.1).toFixed(1) + ['kB', 'MB', 'GB', 'TB', 'PB', 'EB'][i];
+        this._listElement.appendChild(item);
     },
     _getItemByFileId: function(id){
-        var item = this._getElement('list').firstChild;
+        var item = this._listElement.firstChild;
 
-        // there can't be text nodes in our dynamically created list
-        // because of that we can safely use nextSibling
+        // there can't be txt nodes in dynamically created list
+        // and we can  use nextSibling
         while (item){
-            if (item.qqFileId == id){
-                return item;
-            }
-
+            if (item.qqFileId == id) return item;
             item = item.nextSibling;
         }
     },
@@ -468,7 +646,7 @@ qq.FileUploader.prototype = {
      **/
     _bindCancelEvent: function(){
         var self = this,
-            list = this._getElement('list');
+            list = this._listElement;
 
         qq.attach(list, 'click', function(e){
             e = e || window.event;
@@ -482,6 +660,92 @@ qq.FileUploader.prototype = {
                 qq.remove(item);
             }
         });
+    }
+});
+
+qq.UploadDropZone = function(o){
+    this._options = {
+        element: null,
+        onEnter: function(e){},
+        onLeave: function(e){},
+        // is not fired when leaving element by hovering descendants
+        onLeaveNotDescendants: function(e){},
+        onDrop: function(e){}
+    };
+    qq.extend(this._options, o);
+
+    this._element = this._options.element;
+
+    this._disableDropOutside();
+    this._attachEvents();
+};
+
+qq.UploadDropZone.prototype = {
+    _disableDropOutside: function(e){
+        // run only once for all instances
+        if (!qq.UploadDropZone.dropOutsideDisabled ){
+
+            qq.attach(document, 'dragover', function(e){
+                if (e.dataTransfer){
+                    e.dataTransfer.dropEffect = 'none';
+                    e.preventDefault();
+                }
+            });
+
+            qq.UploadDropZone.dropOutsideDisabled = true;
+        }
+    },
+    _attachEvents: function(){
+        var self = this;
+
+        qq.attach(self._element, 'dragover', function(e){
+            if (!self._isValidFileDrag(e)) return;
+
+            var effect = e.dataTransfer.effectAllowed;
+            if (effect == 'move' || effect == 'linkMove'){
+                e.dataTransfer.dropEffect = 'move'; // for FF (only move allowed)
+            } else {
+                e.dataTransfer.dropEffect = 'copy'; // for Chrome
+            }
+
+            e.stopPropagation();
+            e.preventDefault();
+        });
+
+        qq.attach(self._element, 'dragenter', function(e){
+            if (!self._isValidFileDrag(e)) return;
+
+            self._options.onEnter(e);
+        });
+
+        qq.attach(self._element, 'dragleave', function(e){
+            if (!self._isValidFileDrag(e)) return;
+
+            self._options.onLeave(e);
+
+            var relatedTarget = document.elementFromPoint(e.clientX, e.clientY);
+            // do not fire when moving a mouse over a descendant
+            if (qq.contains(this, relatedTarget)) return;
+
+            self._options.onLeaveNotDescendants(e);
+        });
+
+        qq.attach(self._element, 'drop', function(e){
+            if (!self._isValidFileDrag(e)) return;
+
+            e.preventDefault();
+            self._options.onDrop(e);
+        });
+    },
+    _isValidFileDrag: function(e){
+        var dt = e.dataTransfer,
+            // do not check dt.types.contains in webkit, because it crashes safari 4
+            isWebkit = navigator.userAgent.indexOf("AppleWebKit") > -1;
+
+        // dt.effectAllowed is none in Safari 5
+        // dt.types.contains check is for firefox
+        return dt && dt.effectAllowed != 'none' &&
+            (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
 
     }
 };
@@ -546,9 +810,8 @@ qq.UploadButton.prototype = {
             right: 0,
             top: 0,
             fontFamily: 'Arial',
-            // if larger button becomes visible (filter is not applied in IE8 on SOME PCs)
-            // probably related to http://social.msdn.microsoft.com/forums/en-US/iewebdevelopment/thread/29d0b0e7-4326-4b3e-823c-51420d4cf253
-            fontSize: '243px',
+            // 4 persons reported this, the max values that worked for them were 243, 236, 236, 118
+            fontSize: '118px',
             margin: 0,
             padding: 0,
             cursor: 'pointer',
@@ -587,33 +850,121 @@ qq.UploadButton.prototype = {
 };
 
 /**
- * Class for uploading files using form and iframe
+ * Class for uploading files, uploading itself is handled by child classes
  */
-qq.UploadHandlerForm = function(o){
+qq.UploadHandlerAbstract = function(o){
     this._options = {
-        // URL of the server-side upload script,
-        // should be on the same domain to get response
-        action: '/upload',
-        // fires for each file, when iframe finishes loading
-        onComplete: function(id, fileName, response){}
+        debug: false,
+        action: '/upload.php',
+        // maximum number of concurrent uploads
+        maxConnections: 999,
+        onProgress: function(id, fileName, loaded, total){},
+        onComplete: function(id, fileName, response){},
+        onCancel: function(id, fileName){}
     };
     qq.extend(this._options, o);
 
-    this._inputs = {};
-    this._files = [];
+    this._queue = [];
+    // params for files in queue
+    this._params = [];
 };
-qq.UploadHandlerForm.prototype = {
+qq.UploadHandlerAbstract.prototype = {
+    log: function(str){
+        if (this._options.debug && window.console) console.log('[uploader] ' + str);
+    },
     /**
-     * Adds file input to the queue
-     * Returns id to use with upload, cancel
+     * Adds file or file input to the queue
+     * @returns id
      **/
+    add: function(file){},
+    /**
+     * Sends the file identified by id and additional query params to the server
+     */
+    upload: function(id, params){
+        var len = this._queue.push(id);
+
+        var copy = {};
+        qq.extend(copy, params);
+        this._params[id] = copy;
+
+        // if too many active uploads, wait...
+        if (len <= this._options.maxConnections){
+            this._upload(id, this._params[id]);
+        }
+    },
+    /**
+     * Cancels file upload by id
+     */
+    cancel: function(id){
+        this._cancel(id);
+        this._dequeue(id);
+    },
+    /**
+     * Cancells all uploads
+     */
+    cancelAll: function(){
+        for (var i=0; i<this._queue.length; i++){
+            this._cancel(this._queue[i]);
+        }
+        this._queue = [];
+    },
+    /**
+     * Returns name of the file identified by id
+     */
+    getName: function(id){},
+    /**
+     * Returns size of the file identified by id
+     */
+    getSize: function(id){},
+    /**
+     * Returns id of files being uploaded or
+     * waiting for their turn
+     */
+    getQueue: function(){
+        return this._queue;
+    },
+    /**
+     * Actual upload method
+     */
+    _upload: function(id){},
+    /**
+     * Actual cancel method
+     */
+    _cancel: function(id){},
+    /**
+     * Removes element from queue, starts upload of next
+     */
+    _dequeue: function(id){
+        var i = qq.indexOf(this._queue, id);
+        this._queue.splice(i, 1);
+
+        var max = this._options.maxConnections;
+
+        if (this._queue.length >= max){
+            var nextId = this._queue[max-1];
+            this._upload(nextId, this._params[nextId]);
+        }
+    }
+};
+
+/**
+ * Class for uploading files using form and iframe
+ * @inherits qq.UploadHandlerAbstract
+ */
+qq.UploadHandlerForm = function(o){
+    qq.UploadHandlerAbstract.apply(this, arguments);
+
+    this._inputs = {};
+};
+// @inherits qq.UploadHandlerAbstract
+qq.extend(qq.UploadHandlerForm.prototype, qq.UploadHandlerAbstract.prototype);
+
+qq.extend(qq.UploadHandlerForm.prototype, {
     add: function(fileInput){
         fileInput.setAttribute('name', 'qqfile');
-        var uid = qq.getUniqueId();
-        var id = 'qq-upload-handler-iframe' + uid;
+        var id = 'qq-upload-handler-iframe' + qq.getUniqueId();
 
         this._inputs[id] = fileInput;
-        this._files[uid] = fileInput;
 
         // remove file input from DOM
         if (fileInput.parentNode){
@@ -622,50 +973,14 @@ qq.UploadHandlerForm.prototype = {
 
         return id;
     },
-    /**
-     * Sends the file identified by id and additional query params to the server
-     * @param {Object} params name-value string pairs
-     */
-    upload: function(id, params){
-        if (typeof id=='number') {
-            var id = 'qq-upload-handler-iframe' + id;
-        }
-
-        var input = this._inputs[id];
-
-        if (!input){
-            throw new Error('file with passed id was not added, or already uploaded or cancelled');
-        }
-
-        var fileName = this.getName(id);
-
-        var iframe = this._createIframe(id);
-        var form = this._createForm(iframe, params);
-        form.appendChild(input);
-        var self = this;
-        this._attachLoadEvent(iframe, function(){
-            self._options.onComplete(id, fileName, self._getIframeContentJSON(iframe));
-
-            delete self._inputs[id];
-            uid = id.replace('qq-upload-handler-iframe','');
-            self._files[uid] = null;
-            // timeout added to fix busy state in FF3.6
-            setTimeout(function(){
-                qq.remove(iframe);
-            }, 1);
-        });
-
-        form.submit();
-        qq.remove(form);
-
-        return id;
+    getName: function(id){
+        // get input value and remove path to normalize
+        return this._inputs[id].value.replace(/.*(\/|\\)/, "");
     },
-    cancel: function(id){
-        if (id in this._inputs){
-            delete this._inputs[id];
-            uid = id.replace('qq-upload-handler-iframe','');
-            this._files[uid] = null;
-        }
+    _cancel: function(id){
+        this._options.onCancel(id, this.getName(id));
+
+        delete this._inputs[id];
 
         var iframe = document.getElementById(id);
         if (iframe){
@@ -677,9 +992,39 @@ qq.UploadHandlerForm.prototype = {
             qq.remove(iframe);
         }
     },
-    getName: function(id){
-        // get input value and remove path to normalize
-        return this._inputs[id].value.replace(/.*(\/|\\)/, "");
+    _upload: function(id, params){
+        var input = this._inputs[id];
+
+        if (!input){
+            throw new Error('file with passed id was not added, or already uploaded or cancelled');
+        }
+
+        var fileName = this.getName(id);
+
+        var iframe = this._createIframe(id);
+        var form = this._createForm(iframe, params);
+        form.appendChild(input);
+
+        var self = this;
+        this._attachLoadEvent(iframe, function(){
+            self.log('iframe loaded');
+
+            var response = self._getIframeContentJSON(iframe);
+
+            self._options.onComplete(id, fileName, response);
+            self._dequeue(id);
+
+            delete self._inputs[id];
+            // timeout added to fix busy state in FF3.6
+            setTimeout(function(){
+                qq.remove(iframe);
+            }, 1);
+        });
+
+        form.submit();
+        qq.remove(form);
+
+        return id;
     },
     _attachLoadEvent: function(iframe, callback){
         qq.attach(iframe, 'load', function(){
@@ -712,12 +1057,11 @@ qq.UploadHandlerForm.prototype = {
         var doc = iframe.contentDocument ? iframe.contentDocument: iframe.contentWindow.document,
             response;
 
-        // XXX: Added for multifile, since returned HTML in response does not parse
-        // correctly when added directly to an iframe body
-        responseText = doc.getElementById('json-response') ? doc.getElementById('json-response').innerHTML : doc.body.innerHTML;
-        try{
-            //response = eval("(" + doc.body.innerHTML + ")");
-            response = jQuery.parseJSON( responseText );
+        this.log("converting iframe's innerHTML to JSON");
+        this.log("innerHTML = " + doc.body.innerHTML);
+
+        try {
+            response = eval("(" + doc.body.innerHTML + ")");
         } catch(err){
             response = {};
         }
@@ -755,32 +1099,29 @@ qq.UploadHandlerForm.prototype = {
         // Because in this case file won't be attached to request
         var form = qq.toElement('<form method="post" enctype="multipart/form-data"></form>');
 
-        var queryString = '?' + qq.obj2url(params);
+        var queryString = qq.obj2url(params, this._options.action);
 
-        form.setAttribute('action', this._options.action + queryString);
+        form.setAttribute('action', queryString);
         form.setAttribute('target', iframe.name);
         form.style.display = 'none';
         document.body.appendChild(form);
 
         return form;
     }
-};
+});
 
 /**
  * Class for uploading files using xhr
+ * @inherits qq.UploadHandlerAbstract
  */
 qq.UploadHandlerXhr = function(o){
-    this._options = {
-        // url of the server-side upload script,
-        // should be on the same domain
-        action: '/upload',
-        onProgress: function(id, fileName, loaded, total){},
-        onComplete: function(id, fileName, response){}
-    };
-    qq.extend(this._options, o);
+    qq.UploadHandlerAbstract.apply(this, arguments);
 
     this._files = [];
     this._xhrs = [];
+
+    // current loaded size in bytes for each file
+    this._loaded = [];
 };
 
 // static method
@@ -794,314 +1135,113 @@ qq.UploadHandlerXhr.isSupported = function(){
         typeof (new XMLHttpRequest()).upload != "undefined" );
 };
 
-qq.UploadHandlerXhr.prototype = {
+// @inherits qq.UploadHandlerAbstract
+qq.extend(qq.UploadHandlerXhr.prototype, qq.UploadHandlerAbstract.prototype)
+
+qq.extend(qq.UploadHandlerXhr.prototype, {
     /**
      * Adds file to the queue
      * Returns id to use with upload, cancel
      **/
     add: function(file){
+        if (!(file instanceof File)){
+            throw new Error('Passed obj in not a File (in qq.UploadHandlerXhr)');
+        }
+
         return this._files.push(file) - 1;
+    },
+    getName: function(id){
+        var file = this._files[id];
+        // fix missing name in Safari 4
+        return file.fileName != null ? file.fileName : file.name;
+    },
+    getSize: function(id){
+        var file = this._files[id];
+        return file.fileSize != null ? file.fileSize : file.size;
+    },
+    /**
+     * Returns uploaded bytes for file identified by id
+     */
+    getLoaded: function(id){
+        return this._loaded[id] || 0;
     },
     /**
      * Sends the file identified by id and additional query params to the server
      * @param {Object} params name-value string pairs
      */
-    upload: function(id, params){
+    _upload: function(id, params){
         var file = this._files[id],
             name = this.getName(id),
             size = this.getSize(id);
 
-        if (!file){
-            throw new Error('file with passed id was not added, or already uploaded or cancelled');
-        }
+        this._loaded[id] = 0;
 
         var xhr = this._xhrs[id] = new XMLHttpRequest();
-
         var self = this;
 
         xhr.upload.onprogress = function(e){
             if (e.lengthComputable){
+                self._loaded[id] = e.loaded;
                 self._options.onProgress(id, name, e.loaded, e.total);
             }
         };
 
         xhr.onreadystatechange = function(){
-            // the request was aborted/cancelled
-            if (!self._files[id]){
-                return;
-            }
-
             if (xhr.readyState == 4){
-
-                self._options.onProgress(id, name, size, size);
-
-                if (xhr.status == 200){
-                    var response;
-
-                    try {
-                        // XXX: Changed for multifile to use safer JQuery.parseJSON
-                        //response = eval("(" + xhr.responseText + ")");
-                        response = jQuery.parseJSON(xhr.responseText);
-                    } catch(err){
-                        response = {};
-                    }
-
-                    self._options.onComplete(id, name, response);
-
-                } else {
-                    self._options.onComplete(id, name, {});
-                }
-
-                self._files[id] = null;
-                self._xhrs[id] = null;
+                self._onComplete(id, xhr);
             }
         };
 
         // build query string
-        var queryString = '?qqfile=' + encodeURIComponent(name) + '&' + qq.obj2url(params);
+        params = params || {};
+        params['qqfile'] = name;
+        var queryString = qq.obj2url(params, this._options.action);
 
-        xhr.open("POST", this._options.action + queryString, true);
+        xhr.open("POST", queryString, true);
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
         xhr.setRequestHeader("X-File-Name", encodeURIComponent(name));
-        // important : without content-type zope HTTPRequest don't accept the file
-        // so, for webkit which don't send content-type header
-        // but also with Mozilla sometimes
-        // we just set a bad octet/stream mime-type
-        // (not important since server side will do the good job around mime-type)
-        xhr.setRequestHeader("Content-Type", 'application/octet-stream');
+        xhr.setRequestHeader("Content-Type", "application/octet-stream");
         xhr.send(file);
-
     },
-    cancel: function(id){
+    _onComplete: function(id, xhr){
+        // the request was aborted/cancelled
+        if (!this._files[id]) return;
+
+        var name = this.getName(id);
+        var size = this.getSize(id);
+
+        this._options.onProgress(id, name, size, size);
+
+        if (xhr.status == 200){
+            this.log("xhr - server response received");
+            this.log("responseText = " + xhr.responseText);
+
+            var response;
+
+            try {
+                response = eval("(" + xhr.responseText + ")");
+            } catch(err){
+                response = {};
+            }
+
+            this._options.onComplete(id, name, response);
+
+        } else {
+            this._options.onComplete(id, name, {});
+        }
+
+        this._files[id] = null;
+        this._xhrs[id] = null;
+        this._dequeue(id);
+    },
+    _cancel: function(id){
+        this._options.onCancel(id, this.getName(id));
+
         this._files[id] = null;
 
         if (this._xhrs[id]){
             this._xhrs[id].abort();
             this._xhrs[id] = null;
         }
-    },
-    getName: function(id){
-        // fix missing name in Safari 4
-        var file = this._files[id];
-        return file.fileName != null ? file.fileName : file.name;
-    },
-    getSize: function(id){
-        // fix missing size in Safari 4
-        var file = this._files[id];
-        return file.fileSize != null ? file.fileSize : file.size;
     }
-};
-
-//
-// Helper functions
-//
-
-var qq = qq || {};
-
-//
-// Useful generic functions
-
-/**
- * Adds all missing properties from obj2 to obj1
- */
-qq.extend = function(obj1, obj2){
-    for (var prop in obj2){
-        obj1[prop] = obj2[prop];
-    }
-};
-
-/**
- * @return {Number} unique id
- */
-qq.getUniqueId = (function(){
-    var id = 0;
-    return function(){
-        return id++;
-    };
-})();
-
-//
-// Events
-
-qq.attach = function(element, type, fn){
-    if (element.addEventListener){
-        element.addEventListener(type, fn, false);
-    } else if (element.attachEvent){
-        element.attachEvent('on' + type, fn);
-    }
-};
-qq.detach = function(element, type, fn){
-    if (element.removeEventListener){
-        element.removeEventListener(type, fn, false);
-    } else if (element.attachEvent){
-        element.detachEvent('on' + type, fn);
-    }
-};
-
-qq.preventDefault = function(e){
-    if (e.preventDefault){
-        e.preventDefault();
-    } else{
-        e.returnValue = false;
-    }
-};
-//
-// Node manipulations
-
-/**
- * Insert node a before node b.
- */
-qq.insertBefore = function(a, b){
-    b.parentNode.insertBefore(a, b);
-};
-qq.remove = function(element){
-    element.parentNode.removeChild(element);
-};
-
-qq.contains = function(parent, descendant){
-    if (parent.contains){
-        return parent.contains(descendant);
-    } else {
-        return !!(descendant.compareDocumentPosition(parent) & 8);
-    }
-};
-
-/**
- * Creates and returns element from html string
- * Uses innerHTML to create an element
- */
-qq.toElement = (function(){
-    var div = document.createElement('div');
-    return function(html){
-        div.innerHTML = html;
-        var element = div.firstChild;
-        div.removeChild(element);
-        return element;
-    };
-})();
-
-//
-// Node properties and attributes
-
-/**
- * Sets styles for an element.
- * Fixes opacity in IE6-8.
- */
-qq.css = function(element, styles){
-    if (styles.opacity != null){
-        if (typeof element.style.opacity != 'string' && typeof(element.filters) != 'undefined'){
-            styles.filter = 'alpha(opacity=' + Math.round(100 * styles.opacity) + ')';
-        }
-    }
-    qq.extend(element.style, styles);
-};
-qq.hasClass = function(element, name){
-    var re = new RegExp('(^| )' + name + '( |$)');
-    return re.test(element.className);
-};
-qq.addClass = function(element, name){
-    if (!qq.hasClass(element, name)){
-        element.className += ' ' + name;
-    }
-};
-qq.removeClass = function(element, name){
-    var re = new RegExp('(^| )' + name + '( |$)');
-    element.className = element.className.replace(re, ' ').replace(/^\s+|\s+$/g, "");
-};
-qq.setText = function(element, text){
-    element.innerText = text;
-    element.textContent = text;
-};
-qq.setProgressBar = function(element, text1, text2){
-    if (! element.hasChildNodes()) {
-        if (! text1 ) size='2px';
-        else size = text1+ '%';
-        var progressBar = '<div class="sizeContainer"><div class="sizeBar" style="width:' + size + '"></div></div>';
-        var total = '<div class="sizeTotal">' + text2 + '</div>';
-        element.innerHTML = total + progressBar;
-    }
-    else {
-        var sizeBar = qq.getByClass(element, "sizeBar")[0];
-        sizeBar.style.width = text1+ '%';
-    }
-};
-
-//
-// Selecting elements
-
-qq.children = function(element){
-    var children = [],
-    child = element.firstChild;
-
-    while (child){
-        if (child.nodeType == 1){
-            children.push(child);
-        }
-        child = child.nextSibling;
-    }
-
-    return children;
-};
-
-qq.getByClass = function(element, className){
-    if (element.querySelectorAll){
-        return element.querySelectorAll('.' + className);
-    }
-
-    var result = [];
-    var candidates = element.getElementsByTagName("*");
-    var len = candidates.length;
-
-    for (var i = 0; i < len; i++){
-        if (qq.hasClass(candidates[i], className)){
-            result.push(candidates[i]);
-        }
-    }
-    return result;
-};
-
-/**
- * obj2url() takes a json-object as argument and generates
- * a querystring. pretty much like jQuery.param()
- *
- * @param  Object JSON-Object
- * @param  String current querystring-part
- * @return String encoded querystring
- */
-qq.obj2url = function(obj, temp){
-    var uristrings = [],
-        add = function(nextObj, i){
-
-            var nextTemp = temp
-              ? (/\[\]$/.test(temp)) /* prevent double-encoding */
-                  ? temp
-                  : temp+'['+i+']'
-              : i;
-
-          uristrings.push(typeof nextObj === 'object'
-              ? qq.obj2url(nextObj, nextTemp)
-              : (Object.prototype.toString.call(nextObj) === '[object Function]')
-                  ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj())
-                  : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj));
-        };
-
-    if (Object.prototype.toString.call(obj) === '[object Array]'){
-        // we wont use a for-in-loop on an array (performance)
-        for (var i = 0, len = obj.length; i < len; ++i){
-            add(obj[i], i);
-        }
-
-    } else if ((obj !== undefined) &&
-               (obj !== null) &&
-               (typeof obj === "object")){
-
-        // for anything else but a scalar, we will use for-in-loop
-        for (var i in obj){
-            add(obj[i], i);
-        }
-    } else {
-        uristrings.push(encodeURIComponent(temp) + '=' + encodeURIComponent(obj));
-    }
-
-    return uristrings.join('&').replace(/%20/g, '+');
-};
+});

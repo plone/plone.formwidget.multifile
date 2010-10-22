@@ -22,23 +22,23 @@ class MultiFileField(List):
     implements(IMultiFileField)
 
     multi = True
-    use_flashupload = True
-    size_limit = 0
-    sim_upload_limit = 1
-    allowable_file_extensions = u"*.*;"
+    useFlashUpload = True
+    sizeLimit = 0
+    maxConnections = 1
+    allowableFileExtensions = u"*.*;"
 
     def __init__(self,
         multi=True,
-        use_flashupload=True,
-        size_limit=0,
-        sim_upload_limit=1,
-        allowable_file_extensions=u"*.*;",
+        useFlashUpload=True,
+        sizeLimit=0,
+        maxConnections=1,
+        allowableFileExtensions=u"*.*;",
         **kw
     ):
         self.multi = multi
-        self.use_flashupload = use_flashupload
-        self.size_limit = size_limit
-        self.sim_upload_limit = sim_upload_limit
-        self.allowable_file_extensions = allowable_file_extensions
+        self.useFlashUpload = useFlashUpload
+        self.sizeLimit = sizeLimit
+        self.maxConnections = maxConnections
+        self.allowableFileExtensions = allowableFileExtensions
 
         super(MultiFileField, self).__init__(**kw)

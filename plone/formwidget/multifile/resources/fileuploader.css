@@ -43,9 +43,10 @@
 .qq-upload-file {}
 /* note : the '/++resource++plone.formwidget.multifile' inside url is for Plone3 portal_css compliance */
 .qq-upload-spinner {display:none; background: url("/++resource++plone.formwidget.multifile/loading.gif"); width:15px; height:15px; vertical-align:text-bottom; margin-left: 10px}
-.qq-upload-size,.qq-upload-cancel {font-size:11px;}
+.qq-upload-size {font-size:11px; margin-left: 10px;}
+.qq-upload-cancel, .qq-error-cancel {font-size:11px;}
 
-.qq-upload-list .qq-upload-cancel {
+.qq-upload-list .qq-upload-cancel, .qq-upload-list .qq-error-cancel {
    display: block;
    float: right;
    width: 16px;
@@ -57,7 +58,8 @@
 
 
 .qq-upload-fail { background-color: #FDE5DD !important; }
-.qq-upload-failed-text {display:none; margin-left: 10px;}
+/*.qq-upload-failed-text {display:none; margin-left: 10px;}*/
+.qq-upload-failed-text {display:none;}
 .qq-upload-fail .qq-upload-failed-text {display:inline; color: red;}
 
 

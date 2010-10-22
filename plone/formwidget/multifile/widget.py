@@ -6,7 +6,7 @@ import zope.component
 from zope.component import adapter
 
 from zope.app.component.hooks import getSite
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+#from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse
 from zope.pagetemplate.interfaces import IPageTemplate
@@ -58,7 +58,9 @@ from plone.formwidget.multifile.utils import encode, decode, decodeQueryString
 # ------------------------------------------------------------------------------
 # BUGS
 # ------------------------------------------------------------------------------
-# - IE8 displays a blank <li> item in between each upload
+# - If users logon session expires, and tryes to add/delete items, they won't
+#   work since they are not auth'd and there is no error message; just looks
+#   like a failure (500; 503).  Also, drafts will not work for same reason.
 # ------------------------------------------------------------------------------
 
 
@@ -136,10 +138,10 @@ class MultiFileWidget(multi.MultiWidget):
         from plone.formwidget.multifile import MultiFileField
         if not isinstance(self.field, MultiFileField):
             self.field.multi = MultiFileField.multi
-            self.field.use_flashupload = MultiFileField.use_flashupload
-            self.field.size_limit = MultiFileField.size_limit
-            self.field.sim_upload_limit = MultiFileField.sim_upload_limit
-            self.field.allowable_file_extensions = MultiFileField.allowable_file_extensions
+            self.field.useFlashUpload = MultiFileField.useFlashUpload
+            self.field.sizeLimit = MultiFileField.sizeLimit
+            self.field.maxConnections = MultiFileField.maxConnections
+            self.field.allowableFileExtensions = MultiFileField.allowableFileExtensions
 
         super(MultiFileWidget, self).update()
         self.portal = getSite()
@@ -149,42 +151,46 @@ class MultiFileWidget(multi.MultiWidget):
         %(javascript)s
         // ]]></script>
         """
+
+        # DEBUG; remove CDATA
+        JS="""<script type="text/javascript">
+        %(javascript)s
+        </script>
+        """
         settings = self.uploadSettings()
-        if self.field.use_flashupload:
-            #javascript = FLASH_UPLOAD_JS % settings
+        if self.field.useFlashUpload:
             javascript = getFlashInlineJavascript() % settings
         else:
-            #javascript = XHR_UPLOAD_JS % settings
             javascript = getXHRInlineJavascript() % settings
 
         return JS % {'javascript' : javascript}
 
-    def contentTypesInfos(self, allowable_file_extensions):
+    def contentTypesInfos(self, allowableFileExtensions):
         """
-        return some content types infos depending on allowable_file_extensions type
-        allowable_file_extensions could be 'image', 'video', 'audio' or any
+        return some content types infos depending on allowableFileExtensions type
+        allowableFileExtensions could be 'image', 'video', 'audio' or any
         extension like '*.doc'
         """
         #context = aq_inner(self.context)
         ext = '*.*;'
         extlist = []
         msg = _(u'Choose files to upload')
-        if allowable_file_extensions == 'image' :
+        if allowableFileExtensions == 'image' :
             ext = '*.jpg;*.jpeg;*.gif;*.png;'
             msg = _(u'Choose images to upload')
-        elif allowable_file_extensions == 'video' :
+        elif allowableFileExtensions == 'video' :
             ext = '*.flv;*.avi;*.wmv;*.mpg;'
             msg = _(u'Choose video files to upload')
-        elif allowable_file_extensions == 'audio' :
+        elif allowableFileExtensions == 'audio' :
             ext = '*.mp3;*.wav;*.ogg;*.mp4;*.wma;*.aif;'
             msg = _(u'Choose audio files to upload')
-        elif allowable_file_extensions == 'flash' :
+        elif allowableFileExtensions == 'flash' :
             ext = '*.swf;'
             msg = _(u'Choose flash files to upload')
-        elif allowable_file_extensions :
-            # you can also pass a list of extensions in allowable_file_extensions request var
+        elif allowableFileExtensions :
+            # you can also pass a list of extensions in allowableFileExtensions request var
             # with this syntax '*.aaa;*.bbb;'
-            ext = allowable_file_extensions
+            ext = allowableFileExtensions
             msg = _(u'Choose file for upload : ') + ext
 
         try :
@@ -206,11 +212,11 @@ class MultiFileWidget(multi.MultiWidget):
         portalURL         = self.portal.absolute_url()
         fieldName         = self.field.__name__
         typeupload        = session.get('typeupload', request.get('typeupload', ''))
-        contentTypesInfos = self.contentTypesInfos(self.field.allowable_file_extensions)
+        contentTypesInfos = self.contentTypesInfos(self.field.allowableFileExtensions)
         ticket            = encode(self.request.cookies.get('__ac', ''))
         requestURL        = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
         widgetURL         = requestURL + '/++widget++' + fieldName
-        if self.field.use_flashupload:
+        if self.field.useFlashUpload:
             actionURL     = urllib.quote(widgetURL + '/@@multifile_flash_upload_file')
         else:
             actionURL     = urllib.quote(widgetURL + '/@@multifile_upload_file')
@@ -229,9 +235,9 @@ class MultiFileWidget(multi.MultiWidget):
             name                       = self.getUploaderID(),
             ticket                     = ticket,
             multi                      = self.field.multi and 'true' or 'false',
-            sizeLimit                  = self.field.size_limit and str(self.size_limit * 1024) or '',
-            xhrSizeLimit               = self.field.size_limit and str(self.size_limit * 1024) or '0',
-            simUploadLimit             = str(self.field.sim_upload_limit),
+            sizeLimit                  = self.field.sizeLimit and str(self.sizeLimit * 1024) or '',
+            xhrSizeLimit               = self.field.sizeLimit and str(self.sizeLimit * 1024) or '0',
+            maxConnections             = str(self.field.maxConnections),
             buttonText                 = _(u'Browse'),
             deleteMessage              = _(u'Deleting... Please Wait.'),
             dragAndDropText            = _(u'Drag and drop files to upload'),
