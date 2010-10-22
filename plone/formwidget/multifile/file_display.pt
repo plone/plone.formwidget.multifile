@@ -15,7 +15,7 @@
     <tal:EDITABLE tal:condition="options/editable">
       <span class="discreet">
         &mdash;
-        <a href=""
+        <a href="#"
            class="multifile-delete"
            i18n:translate="link_delete_file">delete</a>
       </span>
