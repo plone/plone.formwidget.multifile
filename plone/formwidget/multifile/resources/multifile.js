@@ -80,10 +80,12 @@ if(jQuery)(
                     }
                     jQuery.post(checkScript, postData, function(data) {
                         for(var key in data) {
-                            if (event.data.action(event, checkScript, fileQueueObj, folder, single) !== false) {
-                                // Never allow duplicates, since server will reject them
-                                // You would need to delete, then re-add to replace
-                                document.getElementById(jQuery(event.target).attr('id') + 'Uploader').cancelFileUpload(key, true, true);
+                            if (key) {
+                                if (event.data.action(event, checkScript, fileQueueObj, folder, single) !== false) {
+                                    // Never allow duplicates, since server will reject them
+                                    // You would need to delete, then re-add to replace
+                                    document.getElementById(jQuery(event.target).attr('id') + 'Uploader').cancelFileUpload(key, true, true);
+                                }
                             }
                         }
                         if (single) {

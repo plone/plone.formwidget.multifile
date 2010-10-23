@@ -43,6 +43,11 @@ class MultiFileDeleteFile(BrowserView):
         self.widget = context
         self.content = aq_inner(self.widget.context)
 
+        # Disable transform on request since it is a json response and we
+        # want to make sure it is not wrapped in xml
+        from plone.transformchain.interfaces import DISABLE_TRANSFORM_REQUEST_KEY
+        request.environ[DISABLE_TRANSFORM_REQUEST_KEY] = True
+
     def deleteFile(self):
         response = self.request.RESPONSE
         response.setHeader('Expires', 'Sat, 1 Jan 2000 00:00:00 GMT')

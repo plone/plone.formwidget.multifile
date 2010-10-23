@@ -147,23 +147,24 @@ class MultiFileWidget(multi.MultiWidget):
         self.portal = getSite()
 
     def getInlineJS(self):
+        #DEBUG
+        #self.field.useFlashUpload = False;
+
+        # We need to encode the javascipt since it contains HTML codes
+        # that deco will XML serialize ( '<' becomes &lt;) etc which would
+        # break the code
         JS="""<script type="text/javascript">// <![CDATA[
-        %(javascript)s
+        document.write(unescape("%(javascript)s"));
         // ]]></script>
         """
 
-        # DEBUG; remove CDATA
-        JS="""<script type="text/javascript">
-        %(javascript)s
-        </script>
-        """
         settings = self.uploadSettings()
         if self.field.useFlashUpload:
-            javascript = getFlashInlineJavascript() % settings
+            javascript = '<script type="text/javascript">' + getFlashInlineJavascript() % settings + '</script>'
         else:
-            javascript = getXHRInlineJavascript() % settings
+            javascript = '<script type="text/javascript">' + getXHRInlineJavascript() % settings + '</script>'
 
-        return JS % {'javascript' : javascript}
+        return JS % {'javascript' : urllib.quote(javascript)}
 
     def contentTypesInfos(self, allowableFileExtensions):
         """

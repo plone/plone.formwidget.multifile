@@ -1,5 +1,6 @@
 import os
 import urllib
+import cgi
 import logging
 
 from Acquisition import aq_inner, aq_parent
@@ -43,6 +44,11 @@ class MultiFileUpload(BrowserView):
         self.widget = context
 
         self.content = aq_inner(self.widget.context)
+
+        # Disable transform on request since it is a json response and we
+        # want to make sure it is not wrapped in xml
+        from plone.transformchain.interfaces import DISABLE_TRANSFORM_REQUEST_KEY
+        request.environ[DISABLE_TRANSFORM_REQUEST_KEY] = True
 
     def checkFile(self):
         response = self.request.RESPONSE
@@ -141,7 +147,10 @@ class MultiFileUpload(BrowserView):
 
             # Reset requestURL so file URL will be rendered properly
             self.request.URL = self.request.getURL()[0:(self.request.getURL().find('/', len(self.content.absolute_url()) + 1))]
-            import cgi
+
+            #HTML_CONTAINER="""<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+            #<html><body>%(value)s</body></html>"""
+            #                u'html'     : cgi.escape(HTML_CONTAINER % {'value' : self.widget.renderWidget(newWidget, int(index))}),
             responseJSON = {u'success'  : True,
                             u'filename' : newWidget.filename,
                             u'html'     : cgi.escape(self.widget.renderWidget(newWidget, int(index))),
@@ -151,11 +160,6 @@ class MultiFileUpload(BrowserView):
             responseJSON = {u'error': 'error'}
 
         return json.dumps(responseJSON)
-        # If iframe was used; wrap the response in a <script> tag or will get json parse errors
-        if self.request.HTTP_X_REQUESTED_WITH or self.widget.field.useFlashUpload:
-            return json.dumps(responseJSON)
-        else:
-            return '<script id="json-response" type="text/plain">' + json.dumps(responseJSON) + '</script>'
 
     def _checkFileSize(self, data):
         """ Checks to make sure falie length is less than allowable maximum

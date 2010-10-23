@@ -16,6 +16,9 @@ FLASH_UPLOAD_JS = """
     // - notify user that file was not uploaded if it was a duplicate
     //   (just add to INFO bar;  create a routine to update info bar and use it)
     // - implement error messages
+    // - onLeave overlay
+    // - use thumbs for thumbs (@@image resize); overlay for larger images click
+
     jQuery(document).ready(function() {
         jQuery('#%(name)s').uploadify({
             'uploader'      : '++resource++plone.formwidget.multifile/uploadify.swf',
@@ -40,11 +43,12 @@ FLASH_UPLOAD_JS = """
                 } catch(err){
                     return false;
                 }
+
                 // TODO:  Do something to indicate the error
                 if( response.error ) { return false; }
 
                 // unescape html before appending it
-                jQuery('#%(fileListID)s').append(jQuery("<div />").html(response.html).text())
+                jQuery('#%(fileListID)s').append(jQuery("<div />").html(response.html).text());
             }
         });
 
@@ -94,9 +98,6 @@ XHR_UPLOAD_JS = """
             //onProgress: function(id, fileName, loaded, total){},
             //onCancel: function(id, fileName){},
             onComplete: function (ID, filename, responseJSON) {
-                // unescape html before appending it
-                jQuery('#%(fileListID)s').append(jQuery("<div />").html(responseJSON.html).text())
-
                 var uploader = xhr_%(ID)s;
                 if (responseJSON.error) {
                     // TODO move to multifile.js
@@ -108,9 +109,10 @@ XHR_UPLOAD_JS = """
                     r('{minSizeLimit}', uploader._formatSize(uploader._options.minSizeLimit));
                     jQuery(uploader._getItemByFileId(ID)).find('.qq-upload-failed-text').html(message);
                     jQuery(uploader._getItemByFileId(ID)).prepend('<a class="qq-error-cancel" href="#">&nbsp;</a>');
-                } else {
-                    jQuery(uploader._getItemByFileId(ID)).remove();
                 }
+                // unescape html before appending it
+                jQuery('#%(fileListID)s').append(jQuery("<div />").html(responseJSON.html).text());
+                jQuery(uploader._getItemByFileId(ID)).remove();
             },
             messages: {
                 serverError:              "%(errorServer)s",
