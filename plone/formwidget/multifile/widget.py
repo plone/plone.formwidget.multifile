@@ -319,6 +319,12 @@ class MultiFileWidget(multi.MultiWidget):
 
         widget.context = objectish_dict(valueDictionary)
 
+        # http://127.0.0.1:50080/content/view/++widget++field_name/filename.ext/@@images/value
+        # NOTE: @@images/value must also be so since we are referencing the widgets value
+        from plone.formwidget.multifile.interfaces import IImageScaleTraversable
+        from zope.interface import alsoProvides
+        alsoProvides(widget, IImageScaleTraversable)
+
         return widget
 
     def extract(self, default=interfaces.NO_VALUE):
@@ -330,7 +336,7 @@ class MultiFileWidget(multi.MultiWidget):
         append = values.append
 
         draftValue = zope.component.getMultiAdapter(
-            (self.context, self.field), interfaces.IDataManager).query()
+           (self.context, self.field), interfaces.IDataManager).query()
 
         if draftValue is None:
             return interfaces.NO_VALUE

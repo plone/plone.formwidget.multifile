@@ -49,3 +49,8 @@ class IMultiFileField(IObject):
                             description=_(u"description_allowableFileExtensions", default=u"Allowable file extensions seperated by a semi-colon or type of image, video, audio or flash."),
                             default=u"*.*;",
                             required=False)
+
+class IImageScaleTraversable(Interface):
+    """Marker for items that should provide access to image scales for named
+    image fields via the @@images view.
+    """

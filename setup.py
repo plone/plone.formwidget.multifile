@@ -34,6 +34,7 @@ setup(name='plone.formwidget.multifile',
         'plone.app.kss',
         'plone.app.drafts',
         'simplejson',
+        'plone.transformchain',
         # -*- Extra requirements: -*-
         ],
       tests_require=tests_require,
