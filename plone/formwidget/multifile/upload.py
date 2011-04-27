@@ -104,7 +104,7 @@ class MultiFileUpload(BrowserView):
                 fileData = FileUpload(aFieldStorage=FieldStorageStub(fileObject, {}, filename))
             except TypeError:
                 return json.dumps({u'error': u'serverError'})
-        elif not self.widget.field.useFlashUpload:
+        elif not self.widget.field.use_flash_upload:
             # using classic form post method (MSIE<=8)
             fileData = self.request.get("qqfile", None)
             filename = getattr(fileData, 'filename', '').split("\\")[-1]
@@ -165,14 +165,14 @@ class MultiFileUpload(BrowserView):
         """ Checks to make sure falie length is less than allowable maximum
         size
         """
-        maxSize = int(self.widget.field.sizeLimit)
+        maxSize = int(self.widget.field.size_limit)
         if not maxSize :
             return 1
         #file_size = len(data.read()) / 1024
         data.seek(0, os.SEEK_END)
         fileSize = data.tell() / 1024
         data.seek(0, os.SEEK_SET)
-        maxSize = int(self.widget.field.sizeLimit)
+        maxSize = int(self.widget.field.size_limit)
         if fileSize <= maxSize:
             return 1
         return 0

@@ -27,6 +27,29 @@ from plone.formwidget.multifile.interfaces import IMultiFileField
 #from plone.formwidget.multifile.inlinejavascript import FLASH_UPLOAD_JS, XHR_UPLOAD_JS
 from plone.formwidget.multifile.utils import encode, decode, decodeQueryString
 
+from plone.formwidget.multifile.interfaces import IImageScaleTraversable
+from zope.interface import alsoProvides
+from Acquisition import ImplicitAcquisitionWrapper
+
+
+# ------------------------------------------------------------------------------
+# NOTES
+# -----
+#
+# - To scale an image; here is syntax:
+#   http://127.0.0.1:50080/content/view/++widget++field_name/filename.ext/@@images/filename.ext
+#   http://127.0.0.1:50080/content/view/++widget++field_name/filename.ext/@@images/filename.ext/thumb
+#   - or -
+#   <img tal:define="scales options/widget/@@images;
+#                    image options/filename;
+#                    thumbnail python: scales.scale(image, width=64, height=64);"
+#        tal:condition="thumbnail"
+#        tal:attributes="src thumbnail/url;
+#                        width thumbnail/width;
+#                        height thumbnail/height" />
+#  - etc - [the rest is like regular scaling; (plone.namedfile.usage.txt)]
+#
+# ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
 # TODO
@@ -46,7 +69,7 @@ from plone.formwidget.multifile.utils import encode, decode, decodeQueryString
 # - add number of files max; size; etc and disable button on max
 # - fallback to list style 'add' if no javascript
 #
-# - add max number of files(maybe list widget has max already); sizeLimit;
+# - add max number of files(maybe list widget has max already); size_limit;
 #
 # KSS STUFF
 # - Implement kss security; make sure only valid user can delete!!!
@@ -111,10 +134,17 @@ class MultiFileWidget(multi.MultiWidget):
 
         view_name = self.name[len(self.form.prefix):]
         view_name = view_name[len(self.form.widgets.prefix):]
-        download_url = '%s/++widget++%s/%s/@@download/%s' % (
+        widget_url = '%s/++widget++%s/%s' % (
             self.request.getURL(),
             view_name,
-            urllib.quote(subwidget.value.filename),
+            urllib.quote(subwidget.value.filename)
+            )
+        download_url = '%s/@@download/%s' % (
+            widget_url,
+            urllib.quote(subwidget.value.filename)
+            )
+        scale_url = '%s/@@images/%s' % (
+            widget_url,
             urllib.quote(subwidget.value.filename)
             )
 
@@ -122,8 +152,10 @@ class MultiFileWidget(multi.MultiWidget):
                                      get_icon_for(context, subwidget.value))),
                    'filename': subwidget.value.filename,
                    'size': int(round(subwidget.value.getSize() / 1024)),
+                   'widget_url': widget_url,
                    'download_url': download_url,
-                   'widget': self,
+                   'scale_url': scale_url,
+                   'widget': subwidget,
                    'editable': self.mode == 'input',
                    }
 
@@ -135,20 +167,20 @@ class MultiFileWidget(multi.MultiWidget):
 
     def update(self):
         # Support old list schema
-        from plone.formwidget.multifile import MultiFileField
-        if not isinstance(self.field, MultiFileField):
-            self.field.multi = MultiFileField.multi
-            self.field.useFlashUpload = MultiFileField.useFlashUpload
-            self.field.sizeLimit = MultiFileField.sizeLimit
-            self.field.maxConnections = MultiFileField.maxConnections
-            self.field.allowableFileExtensions = MultiFileField.allowableFileExtensions
+        from plone.formwidget.multifile.field import MultiFile
+        if not isinstance(self.field, MultiFile):
+            self.field.multi = MultiFile.multi
+            self.field.use_flash_upload = MultiFile.use_flash_upload
+            self.field.size_limit = MultiFile.size_limit
+            self.field.max_connections = MultiFile.max_connections
+            self.field.allowable_file_extensions = MultiFile.allowable_file_extensions
 
         super(MultiFileWidget, self).update()
         self.portal = getSite()
 
     def getInlineJS(self):
         #DEBUG
-        #self.field.useFlashUpload = False;
+        #self.field.use_flash_upload = False;
 
         # We need to encode the javascipt since it contains HTML codes
         # that deco will XML serialize ( '<' becomes &lt;) etc which would
@@ -159,39 +191,39 @@ class MultiFileWidget(multi.MultiWidget):
         """
 
         settings = self.uploadSettings()
-        if self.field.useFlashUpload:
+        if self.field.use_flash_upload:
             javascript = '<script type="text/javascript">' + getFlashInlineJavascript() % settings + '</script>'
         else:
             javascript = '<script type="text/javascript">' + getXHRInlineJavascript() % settings + '</script>'
 
         return JS % {'javascript' : urllib.quote(javascript)}
 
-    def contentTypesInfos(self, allowableFileExtensions):
+    def contentTypesInfos(self, allowable_file_extensions):
         """
-        return some content types infos depending on allowableFileExtensions type
-        allowableFileExtensions could be 'image', 'video', 'audio' or any
+        return some content types infos depending on allowable_file_extensions type
+        allowable_file_extensions could be 'image', 'video', 'audio' or any
         extension like '*.doc'
         """
         #context = aq_inner(self.context)
         ext = '*.*;'
         extlist = []
         msg = _(u'Choose files to upload')
-        if allowableFileExtensions == 'image' :
+        if allowable_file_extensions == 'image' :
             ext = '*.jpg;*.jpeg;*.gif;*.png;'
             msg = _(u'Choose images to upload')
-        elif allowableFileExtensions == 'video' :
+        elif allowable_file_extensions == 'video' :
             ext = '*.flv;*.avi;*.wmv;*.mpg;'
             msg = _(u'Choose video files to upload')
-        elif allowableFileExtensions == 'audio' :
+        elif allowable_file_extensions == 'audio' :
             ext = '*.mp3;*.wav;*.ogg;*.mp4;*.wma;*.aif;'
             msg = _(u'Choose audio files to upload')
-        elif allowableFileExtensions == 'flash' :
+        elif allowable_file_extensions == 'flash' :
             ext = '*.swf;'
             msg = _(u'Choose flash files to upload')
-        elif allowableFileExtensions :
-            # you can also pass a list of extensions in allowableFileExtensions request var
+        elif allowable_file_extensions :
+            # you can also pass a list of extensions in allowable_file_extensions request var
             # with this syntax '*.aaa;*.bbb;'
-            ext = allowableFileExtensions
+            ext = allowable_file_extensions
             msg = _(u'Choose file for upload : ') + ext
 
         try :
@@ -213,11 +245,11 @@ class MultiFileWidget(multi.MultiWidget):
         portalURL         = self.portal.absolute_url()
         fieldName         = self.field.__name__
         typeupload        = session.get('typeupload', request.get('typeupload', ''))
-        contentTypesInfos = self.contentTypesInfos(self.field.allowableFileExtensions)
+        contentTypesInfos = self.contentTypesInfos(self.field.allowable_file_extensions)
         ticket            = encode(self.request.cookies.get('__ac', ''))
         requestURL        = "/".join(self.request.physicalPathFromURL(self.request.getURL()))
         widgetURL         = requestURL + '/++widget++' + fieldName
-        if self.field.useFlashUpload:
+        if self.field.use_flash_upload:
             actionURL     = urllib.quote(widgetURL + '/@@multifile_flash_upload_file')
         else:
             actionURL     = urllib.quote(widgetURL + '/@@multifile_upload_file')
@@ -236,9 +268,9 @@ class MultiFileWidget(multi.MultiWidget):
             name                       = self.getUploaderID(),
             ticket                     = ticket,
             multi                      = self.field.multi and 'true' or 'false',
-            sizeLimit                  = self.field.sizeLimit and str(self.sizeLimit * 1024) or '',
-            xhrSizeLimit               = self.field.sizeLimit and str(self.sizeLimit * 1024) or '0',
-            maxConnections             = str(self.field.maxConnections),
+            sizeLimit                  = self.field.size_limit and str(self.size_limit * 1024) or '',
+            xhrSizeLimit               = self.field.size_limit and str(self.size_limit * 1024) or '0',
+            maxConnections             = str(self.field.max_connections),
             buttonText                 = _(u'Browse'),
             deleteMessage              = _(u'Deleting... Please Wait.'),
             dragAndDropText            = _(u'Drag and drop files to upload'),
@@ -307,25 +339,47 @@ class MultiFileWidget(multi.MultiWidget):
         widget.update()
         widget.field.__name__ = name
 
-        # we need to be able to do something like
-        # getattr(widget.context, widget.field.__name__)
-        # and it should return the value
-        class objectish_dict(dict):
-            def __getattr__(self, k):
-                value = self.get(k)
-                if value is None:
-                    raise ValueError('invalid key')
-                return value
-
-        widget.context = objectish_dict(valueDictionary)
-
-        # http://127.0.0.1:50080/content/view/++widget++field_name/filename.ext/@@images/value
-        # NOTE: @@images/value must also be so since we are referencing the widgets value
-        from plone.formwidget.multifile.interfaces import IImageScaleTraversable
-        from zope.interface import alsoProvides
-        alsoProvides(widget, IImageScaleTraversable)
+        pfm = getattr(widget, 'plone_formwidget_multifile')
+        widget.context = pfm['dict_context']
 
         return widget
+
+    def updateWidgets(self):
+        """Setup internal widgets based on the value_type for each value item.
+        """
+        oldLen = len(self.widgets)
+        self.widgets = []
+        idx = 0
+        if self.value:
+            for v in self.value:
+                widget = self.getWidget(idx)
+                self.applyValue(widget, v)
+
+                # For scaling...
+                widget_url = '%s/%s/++widget++%s/%s' % (
+                    self.betterContext.absolute_url(),
+                    'view',  #if self.form.parentForm == 'display' else 'edit',
+                    self.field.__name__,
+                    urllib.quote(v.filename)
+                    )
+                dict_context = ObjectishDict({ v.filename : v })
+                alsoProvides(dict_context, IMultiFileWidget)
+                setattr(widget, 'plone_formwidget_multifile', {
+                    'original_context' : widget.context,
+                    'dict_context'     : dict_context,
+                    'url'              : widget_url
+                })
+                alsoProvides(widget, IImageScaleTraversable)
+
+                self.widgets.append(widget)
+                idx += 1
+        missing = oldLen - len(self.widgets)
+        if missing > 0:
+            # add previous existing new added widgtes
+            for i in xrange(missing):
+                widget = self.getWidget(idx)
+                self.widgets.append(widget)
+                idx += 1
 
     def extract(self, default=interfaces.NO_VALUE):
         """ This method is responsible to get the widgets value based on the
@@ -335,8 +389,15 @@ class MultiFileWidget(multi.MultiWidget):
         values = []
         append = values.append
 
-        draftValue = zope.component.getMultiAdapter(
-           (self.context, self.field), interfaces.IDataManager).query()
+        #draftValue = zope.component.getMultiAdapter(
+        #   (self.context, self.field), interfaces.IDataManager).query()
+        dataManager = zope.component.queryMultiAdapter(
+           (self.context, self.field), interfaces.IDataManager)
+
+        if dataManager is None:
+            return interfaces.NO_VALUE
+
+        draftValue = dataManager.query()
 
         if draftValue is None:
             return interfaces.NO_VALUE
@@ -349,6 +410,19 @@ class MultiFileWidget(multi.MultiWidget):
             return interfaces.NO_VALUE
         return values
 
+from Acquisition import Implicit
+class ObjectishDict(dict, Implicit):
+    """We need to be able to do something like
+       # getattr(widget.context, widget.field.__name__)
+       # and it should return the value
+    """
+    # XXX: Warning
+    # This is probably not good; but I dont know how to protect it in zcml yet
+    __allow_access_to_unprotected_subobjects__ = True
+
+    def __getattr__(self, k):
+        value = self.get(k)
+        return value
 
 @implementer(interfaces.IFieldWidget)
 @adapter(IMultiFileField, interfaces.IFormLayer)

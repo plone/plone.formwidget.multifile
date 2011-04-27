@@ -4,6 +4,7 @@
     xmlns:z3c="http://namespaces.zope.org/z3c"
     xmlns:gs="http://namespaces.zope.org/genericsetup"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zcml="http://namespaces.zope.org/zcml"
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="plone.formwidget.multifile">
 
@@ -13,6 +14,14 @@
     <include file="scaling.zcml" />
 
     <adapter factory=".widget.MultiFileFieldWidget" />
+
+    <!-- DOES NOT WORK -->
+    <class class=".widget.ObjectishDict">
+        <require
+            permission="zope.Public"
+            interface=".interfaces.IMultiFileWidget"
+        />
+    </class>
 
     <zope:view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -108,6 +117,9 @@
         view=".interfaces.IMultiFileWidget"
         template="image_input.pt"
         />
+
+    <include zcml:condition="installed plone.supermodel" file="handler.zcml" />
+    <include zcml:condition="installed plone.schemaeditor" file="editor.zcml" />
 
     <!-- Generic Setup -->
     <gs:registerProfile
