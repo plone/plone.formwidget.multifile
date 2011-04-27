@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:zcml="http://namespaces.zope.org/zcml"
+    i18n_domain="plone.formwidget.multifile">
+
+    <include package="plone.supermodel" />
+
+    <!-- plone.supermodel configuration -->
+
+    <utility
+        name="plone.formwidget.multifile.field.MultiFile"
+        component=".handler.MultiFileHandler"
+        />
+
+</configure>
