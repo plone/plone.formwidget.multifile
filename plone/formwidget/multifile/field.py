@@ -16,14 +16,14 @@ class MultiFile(List):
     #schema = IMultiFileField
 
     multi = True
-    use_flash_upload = True
+    use_flash_upload = False
     size_limit = 0
     max_connections = 1
     allowable_file_extensions = u"*.*;"
 
     def __init__(self,
         multi=True,
-        use_flash_upload=True,
+        use_flash_upload=False,
         size_limit=0,
         max_connections=1,
         allowable_file_extensions=u"*.*;",

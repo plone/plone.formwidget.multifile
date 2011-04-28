@@ -14,7 +14,7 @@ from Products.Five.browser import BrowserView
 
 from z3c.form import interfaces
 
-from plone.app.z3cformdrafts.drafting import Z3cFormDraftProxy
+from plone.app.z3cformdrafts.interfaces import IZ3cDraft
 
 try :
     # python 2.6
@@ -70,7 +70,7 @@ class MultiFileUpload(BrowserView):
         return self.uploadFile()
 
     def uploadFile(self):
-        if not isinstance(self.content, Z3cFormDraftProxy):
+        if not IZ3cDraft.providedBy(self.content):
             logger.info("Draft does not exist; maybe user could not be authorized!")
             return json.dumps({u'error': u'draftError'})
 
@@ -145,8 +145,10 @@ class MultiFileUpload(BrowserView):
             # TODO; need to create a url create function in widget
             #logger.info("file url: %s" % newWidget.value.absolute_url())
 
-            # Reset requestURL so file URL will be rendered properly
-            self.request.URL = self.request.getURL()[0:(self.request.getURL().find('/', len(self.content.absolute_url()) + 1))]
+            # XXX:  Not sure if this is really bad or not... :)  Just look away!
+            # Reset requestURL so file URL will be rendered properly by
+            # namedFile download_url function
+            self.request.URL = self.request.getURL()[0:self.request.getURL().rfind('++widget++')-1]
 
             #HTML_CONTAINER="""<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
             #<html><body>%(value)s</body></html>"""

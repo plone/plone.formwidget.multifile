@@ -13,7 +13,7 @@ from Products.Five.browser import BrowserView
 
 from z3c.form import interfaces
 
-from plone.app.z3cformdrafts.drafting import Z3cFormDraftProxy
+from plone.app.z3cformdrafts.interfaces import IZ3cDraft
 
 from plone.formwidget.multifile.utils import decode
 
@@ -66,7 +66,7 @@ class MultiFileDeleteFile(BrowserView):
                               })
 
         # Make sure draft proxy exists or we will be editing real content object
-        if not isinstance(self.content, Z3cFormDraftProxy):
+        if not IZ3cDraft.providedBy(self.content):
             msg = u'Can not delete %s; draft proxy is not enabled.  Contact Administrator' % filename
             return json.dumps({u'error': '%s' % msg,
                                u'html' : html % ('Error', msg)
