@@ -11,8 +11,6 @@
     <!-- Include our dependencies -->
     <includeDependencies package="." />
 
-    <include file="scaling.zcml" />
-
     <adapter factory=".widget.MultiFileFieldWidget" />
 
     <!-- DOES NOT WORK -->
@@ -120,6 +118,7 @@
 
     <include zcml:condition="installed plone.supermodel" file="handler.zcml" />
     <include zcml:condition="installed plone.schemaeditor" file="editor.zcml" />
+    <include zcml:condition="installed plone.scale" file="scaling.zcml" />
 
     <!-- Generic Setup -->
     <gs:registerProfile
