@@ -35,6 +35,7 @@ setup(name='plone.formwidget.multifile',
         'plone.app.drafts',
         'simplejson',
         'plone.transformchain',
+        'plone.app.z3cformdrafts',
         # -*- Extra requirements: -*-
         ],
       tests_require=tests_require,

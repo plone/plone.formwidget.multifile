@@ -65,7 +65,7 @@
     <!-- Resources -->
     <browser:resourceDirectory
         name="plone.formwidget.multifile"
-        directory="resources"
+        directory="static"
         />
 
     <!-- Widget templates -->
