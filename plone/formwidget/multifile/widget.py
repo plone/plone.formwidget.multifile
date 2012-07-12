@@ -113,17 +113,18 @@ class MultiFileWidget(MultiWidget):
         if value == None and index == None:
             raise ValueError('Either value or index expected')
 
-        view_name = self.name[len(self.form.prefix):]
-        view_name = view_name[len(self.form.widgets.prefix):]
-        download_url = '%s/++widget++%s/%i/@@download/%s' % (
-            self.request.getURL(),
-            view_name,
-            index,
-            file_.filename,
-            )
+        download_url = None
 
         if value == None:
             value = 'index:%i' % index
+            view_name = self.name[len(self.form.prefix):]
+            view_name = view_name[len(self.form.widgets.prefix):]
+            download_url = '%s/++widget++%s/%i/@@download/%s' % (
+                self.request.getURL(),
+                view_name,
+                index,
+                file_.filename,
+                )
 
         options = {'value': value,
                    'icon': '/'.join((context.portal_url(),
