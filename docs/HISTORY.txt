@@ -1,7 +1,14 @@
 Changelog
 =========
 
+In this branch ...
 
+- Removed integration with jQuery plugin. Instead we use HTML, and
+  when applicable, the "multiple" extension from HTML5 which lets a
+  user upload multiple files at once.
+  [tmog]
+
+  
 1.0a2 (unreleased)
 ------------------
 

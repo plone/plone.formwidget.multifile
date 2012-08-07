@@ -1,16 +1,12 @@
-from Products.Five.browser import BrowserView
-from Acquisition import aq_inner, aq_parent
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
-from plone.formwidget.multifile.interfaces import ITemporaryFileHandler
 from plone.formwidget.multifile.utils import get_icon_for
-from plone.namedfile import NamedFile
+
 from z3c.form.interfaces import IFieldWidget, IDataConverter
 from z3c.form.widget import FieldWidget
 from z3c.form.widget import MultiWidget, Widget
 from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.browser.interfaces import IBrowserView
-from zope.component import getMultiAdapter
+
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse
 
@@ -18,47 +14,13 @@ from zope.publisher.interfaces import IPublishTraverse
 def encode(s):
     """ encode string
     """
-
     return "d".join(map(str, map(ord, s)))
 
 
 def decode(s):
     """ decode string
     """
-
     return "".join(map(chr, map(int, s.split("d"))))
-
-
-# NOTE, THIS IS NOT A PYTHON DICT:
-# NEVER ADD A COMMA (,) AT THE END OF THE LAST KEY/VALUE PAIR, THIS BREAKS ALL
-# M$ INTERNET EXPLORER
-
-INLINE_JAVASCRIPT = """
-
-    jq(document).ready(function() {
-        jq('#%(name)s').uploadify({
-            'uploader'      : '++resource++uploadify.swf',
-            'script'        : '@@multi-file-upload-file',
-            'cancelImg'     : '++resource++cancel.png',
-            'height'        : '30',
-            'width'         : '110',
-            'folder'        : '%(physical_path)s',
-            'scriptData'    : {'cookie': '%(cookie)s'},
-            'onComplete'    : multifile_uploadify_response,
-            'auto'          : true,
-            'multi'         : true,
-            'simUploadLimit': '4',
-            'queueSizeLimit': '999',
-            'sizeLimit'     : '',
-            'fileDesc'      : '',
-            'fileExt'       : '*.*',
-            'buttonText'    : 'BROWSE',
-            'buttonImg'     : '',
-            'scriptAccess'  : 'sameDomain',
-            'hideButton'    : false
-        });
-    });
-"""
 
 
 class MultiFileWidget(MultiWidget):
@@ -96,41 +58,42 @@ class MultiFileWidget(MultiWidget):
             # file yet, but we can get the file from the converter..
             converter = IDataConverter(self)
             converted_value = converter.toFieldValue(self.value)
-            for i, key_or_file in enumerate(self.value):
-                if isinstance(key_or_file, unicode):
-                    file_ = converted_value[i]
-                    yield self.render_file(file_, value=key_or_file)
 
-                else:
-                    yield self.render_file(key_or_file, index=i)
+            own = list(self.value)
 
-    def render_file(self, file_, value=None, index=None, context=None):
-        """Renders the <li> for one file.
-        """
-        if context == None:
-            context = self.better_context
-
-        if value == None and index == None:
-            raise ValueError('Either value or index expected')
-
-        download_url = None
-
-        if value == None:
-            value = 'index:%i' % index
             view_name = self.name[len(self.form.prefix):]
             view_name = view_name[len(self.form.widgets.prefix):]
-            download_url = '%s/++widget++%s/%i/@@download/%s' % (
-                self.request.getURL(),
-                view_name,
-                index,
-                file_.filename,
-                )
 
-        options = {'value': value,
+            for i, value in enumerate(converted_value):
+                try:
+                    index = own.index(value)
+                except IndexError:
+                    download_url = None
+                else:
+                    download_url = '%s/++widget++%s/%i/@@download/%s' % (
+                        self.request.getURL(),
+                        view_name,
+                        index,
+                        value.filename,
+                        )
+            
+                yield self.render_file(i, value, download_url)
+
+    def render_file(self, index, file_, download_url):
+        """Renders the <li> for one file.
+        """
+        context = self.better_context
+
+        try:
+            size = file_.getSize()
+        except AttributeError:
+            size = file_.tell()
+        
+        options = {'value': 'index:%d' % index,
                    'icon': '/'.join((context.portal_url(),
                                      get_icon_for(context, file_))),
                    'filename': file_.filename,
-                   'size': int(round(file_.getSize() / 1024)),
+                   'size': int(round(size / 1024)),
                    'download_url': download_url,
                    'widget': self,
                    'editable': self.mode == 'input',
@@ -141,17 +104,6 @@ class MultiFileWidget(MultiWidget):
     def update(self):
         super(MultiFileWidget, self).update()
         self.portal = getSite()
-
-    def get_inline_js(self):
-        return INLINE_JAVASCRIPT % self.get_settings()
-
-    def get_settings(self):
-        return dict(
-            name=self.get_uploader_id(),
-            cookie=encode(self.request.cookies.get(
-                    '__ac', '')),
-            physical_path="/".join(self.better_context.getPhysicalPath()),
-            )
 
     def get_uploader_id(self):
         """Returns the id attribute for the uploader div. This should
@@ -195,33 +147,3 @@ class MultiFileWidget(MultiWidget):
 def MultiFileFieldWidget(field, request):
     return FieldWidget(field, MultiFileWidget(request))
 
-
-class UploadFileToSessionView(BrowserView):
-    """The uploadify flash calls this view for every file added interactively.
-    This view saves the file in the session and returns the key where the file
-    can be found in the session. When the form is actually submitted the
-    widget gets the file from the session and stores it in the actual target.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        cookie = self.request.form.get("cookie")
-        if cookie:
-            self.request.cookies["__ac"] = decode(cookie)
-
-    def __call__(self):
-        file_ = self.request.form['Filedata']
-        # in some cases the context is the view, so lets walk up
-        # and search the real context
-
-        context = self.context
-        while IBrowserView.providedBy(context):
-            context = aq_parent(aq_inner(context))
-
-        handler = getMultiAdapter((context, self.request),
-                                  ITemporaryFileHandler)
-        file_ = NamedFile(file_, filename=file_.filename.decode('utf-8'))
-        draft = handler.create(file_)
-        return draft.__name__

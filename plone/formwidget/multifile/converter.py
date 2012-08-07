@@ -1,6 +1,8 @@
 from zope.component import getMultiAdapter, queryMultiAdapter
 from plone.formwidget.multifile.interfaces import ITemporaryFileHandler
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
+from plone.namedfile.file import NamedFile
+from plone.namedfile.file import INamedFile
 from z3c.form.converter import BaseDataConverter
 from z3c.form.interfaces import IDataManager
 from zope.schema.interfaces import IList
@@ -21,33 +23,49 @@ class MultiFileConverter(BaseDataConverter):
     def toFieldValue(self, value):
         """Converts the value to a storable form.
         """
-        dm = queryMultiAdapter((self.widget.context, self.field),
-                               IDataManager)
+        
+        if not value:
+            return value
+
+        if not isinstance(value, list):
+            value = [value]
+            
+        dm = queryMultiAdapter(
+            (self.widget.context, self.field),
+            IDataManager
+            )
+
         try:
             original_value = dm.query()
         except TypeError:
             original_value = []
 
-        if original_value and getattr(self.widget, '_converted', False):
-            return original_value
+        if value is original_value:
+            return value
 
-        context = self.widget.form.context
-        request = context.REQUEST
-        handler = getMultiAdapter((context, request),
-                                  ITemporaryFileHandler)
+        handler = getattr(self.widget, '_handler', None)
+        if handler is None:
+            context = self.widget.form.context
+            request = self.widget.request
+            handler = self.widget._handler = getMultiAdapter(
+                (context, request), ITemporaryFileHandler
+                )
+
         new_value = []
 
         for subvalue in value:
-            if isinstance(subvalue, unicode) and subvalue.startswith('new:'):
+            if isinstance(subvalue, basestring) and subvalue.startswith('new:'):
                 temporary_file_key = subvalue.split(':')[1]
                 new_value.append(handler.get(temporary_file_key))
-            elif isinstance(subvalue, unicode) and \
-                 subvalue.startswith('index:'):
+            elif isinstance(subvalue, basestring) and subvalue.startswith('index:'):
                 index = int(subvalue.split(':')[1])
                 new_value.append(original_value[index])
-            else:
+            elif INamedFile.providedBy(subvalue):
                 new_value.append(subvalue)
-
-        self.widget._converted = True
+            elif subvalue.filename:
+                file_ = NamedFile(subvalue, filename=subvalue.filename.decode('utf-8'))
+                handler.create(file_)
+                new_value.append(file_)
+                subvalue.seek(0)
 
         return new_value
