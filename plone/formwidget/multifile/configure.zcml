@@ -22,4 +22,8 @@
   <!-- temporary file handler adapter -->
   <adapter factory=".temporaryfile.TemporaryFileHandler" />
 
+  <browser:resource
+      name="multifile.js"
+      file="resources/multifile.js"/>
+  
 </configure>

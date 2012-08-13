@@ -1,14 +1,33 @@
-
 <tal:WIDGET tal:define="portal_url view/better_context/portal_url">
 
+  <script src="multifile.js"
+  	  type="text/javascript"
+  	  tal:attributes="src string:$portal_url/++resource++multifile.js"/>
+  
   <div class="multi-file">
     <div tal:attributes="id view/get_uploader_id;
                          ref view/name"
          tal:condition="view/editing">
 
-      <input type="file" multiple="yes"
-	     tal:attributes="name view/name"
-	     />
+      <div class="multi-file-picker">
+         <input type="file" multiple="yes"
+		tal:attributes="name string:${view/name}:list"
+		/>
+
+	 <div class="multi-file-placeholder" style="display:none">
+	   <span class="discreet">
+	     &mdash;
+	     <span class="description" i18n:translate="">unsaved</span>
+	   </span>
+	   <span class="remove discreet">
+	     &mdash;
+	     <a href="#" class="multi-file-remove-file"
+		i18n:translate="link_remove_file"
+		>remove</a>
+	   </span>
+	 </div>
+      </div>
+      
     </div>
 
     <ul class="multi-file-files">
