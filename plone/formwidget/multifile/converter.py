@@ -64,7 +64,8 @@ class MultiFileConverter(BaseDataConverter):
                 new_value.append(subvalue)
             elif subvalue.filename:
                 file_ = NamedFile(subvalue, filename=subvalue.filename.decode('utf-8'))
-                handler.create(file_)
+                draft = handler.create(file_)
+                file_.draftName = draft.__name__
                 new_value.append(file_)
                 subvalue.seek(0)
 

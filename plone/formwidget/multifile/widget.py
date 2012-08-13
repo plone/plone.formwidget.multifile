@@ -63,23 +63,27 @@ class MultiFileWidget(MultiWidget):
 
             view_name = self.name[len(self.form.prefix):]
             view_name = view_name[len(self.form.widgets.prefix):]
+            drafts = 0
 
             for i, value in enumerate(converted_value):
+                form_value = 'index:%s'%(i-drafts)
                 try:
                     index = own.index(value)
-                except IndexError:
-                    download_url = None
-                else:
                     download_url = '%s/++widget++%s/%i/@@download/%s' % (
                         self.request.getURL(),
                         view_name,
                         index,
                         value.filename,
                         )
+                except (IndexError, ValueError):
+                    download_url = None
+                    if hasattr(value, 'draftName'):
+                        form_value = 'new:%s'%value.draftName
+                        drafts += 1
             
-                yield self.render_file(i, value, download_url)
+                yield self.render_file(form_value, value, download_url)
 
-    def render_file(self, index, file_, download_url):
+    def render_file(self, form_value, file_, download_url):
         """Renders the <li> for one file.
         """
         context = self.better_context
@@ -89,7 +93,7 @@ class MultiFileWidget(MultiWidget):
         except AttributeError:
             size = file_.tell()
         
-        options = {'value': 'index:%d' % index,
+        options = {'value': form_value,
                    'icon': '/'.join((context.portal_url(),
                                      get_icon_for(context, file_))),
                    'filename': file_.filename,
