@@ -1,6 +1,6 @@
-jQuery(
-    function($) {
-      $('.multi-file-picker input').change(
+(function($) {
+    function init_multifile() {
+	$('.multi-file-picker input').live('change',
         function(e) {
 	  if (! $(this).is(":visible") ) { return false };
 
@@ -16,7 +16,9 @@ jQuery(
 	    name = $(this).val().replace(/^.*[\\\/]/, '');
 	  }
 	     
-	  $(this).parent().clone(true).val("").insertBefore($(this).parent());
+	  new_picker = $(this).parent().clone(true);
+	  new_picker.find('input').val("");
+          new_picker.insertBefore($(this).parent());
 	  $(this).siblings('.multi-file-placeholder').prepend(name).show();
 	  $(this).hide();
         });
@@ -27,5 +29,8 @@ jQuery(
 	  };
 	  return false
         });
-      }
-); 
+    }
+
+    init_multifile();
+    
+})(jQuery); 
