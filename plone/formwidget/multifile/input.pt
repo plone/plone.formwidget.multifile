@@ -2,7 +2,8 @@
 
   <script src="multifile.js"
   	  type="text/javascript"
-  	  tal:attributes="src string:$portal_url/++resource++multifile.js"/>
+  	  tal:attributes="src string:$portal_url/++resource++multifile.js">
+  </script>
   
   <div class="multi-file">
     <div tal:attributes="id view/get_uploader_id;
