@@ -25,5 +25,7 @@
   <browser:resource
       name="multifile.js"
       file="resources/multifile.js"/>
-  
+
+  <i18n:registerTranslations directory="locales" />
+
 </configure>
