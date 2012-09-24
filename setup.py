@@ -5,6 +5,7 @@ version = '1.0a2dev'
 
 tests_require = [
     'zope.app.testing',
+    'lxml',
     ]
 
 setup(name='plone.formwidget.multifile',
