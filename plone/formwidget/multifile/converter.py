@@ -23,22 +23,18 @@ class MultiFileConverter(BaseDataConverter):
     def toFieldValue(self, value):
         """Converts the value to a storable form.
         """
-        
         if not value:
             return value
 
         if not isinstance(value, list):
             value = [value]
-            
+
         dm = queryMultiAdapter(
             (self.widget.context, self.field),
             IDataManager
-            )
+        )
 
-        try:
-            original_value = dm.query()
-        except TypeError:
-            original_value = []
+        original_value = dm.query() if (dm is not None) else []
 
         if value is original_value:
             return value
@@ -48,18 +44,20 @@ class MultiFileConverter(BaseDataConverter):
             context = self.widget.form.context
             request = self.widget.request
             handler = self.widget._handler = getMultiAdapter(
-                (context, request), ITemporaryFileHandler
-                )
+                (context, request),
+                ITemporaryFileHandler
+            )
 
         new_value = []
 
         for subvalue in value:
-            if isinstance(subvalue, basestring) and subvalue.startswith('new:'):
-                temporary_file_key = subvalue.split(':')[1]
-                new_value.append(handler.get(temporary_file_key))
-            elif isinstance(subvalue, basestring) and subvalue.startswith('index:'):
-                index = int(subvalue.split(':')[1])
-                new_value.append(original_value[index])
+            if isinstance(subvalue, basestring):
+                if subvalue.startswith('new:'):
+                    temporary_file_key = subvalue.split(':')[1]
+                    new_value.append(handler.get(temporary_file_key))
+                elif subvalue.startswith('index:'):
+                    index = int(subvalue.split(':')[1])
+                    new_value.append(original_value[index])
             elif INamedFile.providedBy(subvalue):
                 new_value.append(subvalue)
             elif subvalue.filename:
