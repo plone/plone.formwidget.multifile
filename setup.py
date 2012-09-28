@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '1.0a2dev'
+version = '1.0a3dev'
 
 tests_require = [
     'zope.app.testing',
@@ -31,7 +31,6 @@ setup(name='plone.formwidget.multifile',
         'plone.z3cform',
         'plone.namedfile',
         'plone.formwidget.namedfile',
-        'plone.app.drafts',
         # -*- Extra requirements: -*-
         ],
       tests_require=tests_require,

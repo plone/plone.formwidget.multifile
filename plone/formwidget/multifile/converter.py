@@ -1,5 +1,4 @@
-from zope.component import getMultiAdapter, queryMultiAdapter
-from plone.formwidget.multifile.interfaces import ITemporaryFileHandler
+from zope.component import queryMultiAdapter
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.namedfile.file import NamedFile
 from plone.namedfile.file import INamedFile
@@ -7,6 +6,7 @@ from z3c.form.converter import BaseDataConverter
 from z3c.form.interfaces import IDataManager
 from zope.schema.interfaces import IList
 import zope.component
+import re
 
 
 class MultiFileConverter(BaseDataConverter):
@@ -39,32 +39,21 @@ class MultiFileConverter(BaseDataConverter):
         if value is original_value:
             return value
 
-        handler = getattr(self.widget, '_handler', None)
-        if handler is None:
-            context = self.widget.form.context
-            request = self.widget.request
-            handler = self.widget._handler = getMultiAdapter(
-                (context, request),
-                ITemporaryFileHandler
-            )
-
         new_value = []
 
         for subvalue in value:
-            if isinstance(subvalue, basestring):
-                if subvalue.startswith('new:'):
-                    temporary_file_key = subvalue.split(':')[1]
-                    new_value.append(handler.get(temporary_file_key))
-                elif subvalue.startswith('index:'):
-                    index = int(subvalue.split(':')[1])
-                    new_value.append(original_value[index])
+            if isinstance(subvalue, basestring) and subvalue.startswith('index:'):
+                index = int(subvalue.split(':')[1])
+                new_value.append(original_value[index])
             elif INamedFile.providedBy(subvalue):
                 new_value.append(subvalue)
-            elif subvalue.filename:
-                file_ = NamedFile(subvalue, filename=subvalue.filename.decode('utf-8'))
-                draft = handler.create(file_)
-                file_.draftName = draft.__name__
-                new_value.append(file_)
-                subvalue.seek(0)
+            else:
+                filename = getattr(subvalue, 'filename', None)
+                if filename:
+                    # Strip out directories leaving only the file name.
+                    filename = re.split(r'[\\/]+', filename)[-1]
+
+                    f = NamedFile(subvalue, filename=filename.decode('utf-8'))
+                    new_value.append(f)
 
         return new_value

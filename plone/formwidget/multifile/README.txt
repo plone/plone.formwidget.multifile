@@ -7,7 +7,6 @@ Test setup::
     >>> import plone.formwidget.multifile
     >>> from plone.formwidget.multifile.converter import MultiFileConverter
     >>> from plone.formwidget.multifile.widget import MultiFileWidget, MultiFileFieldWidget
-    >>> from plone.formwidget.multifile.temporaryfile import TemporaryFileHandler
     >>> from plone.formwidget.multifile.interfaces import IMultiFileWidget
     >>> from plone.namedfile.field import NamedFile
     >>> from zope.interface import Interface, implements
@@ -22,7 +21,6 @@ Test setup::
     ...     context = None
     >>> class MockContext(object):
     ...     implements(Interface)
-    >>> zope.component.provideAdapter(TemporaryFileHandler)
 
 Like any widget, the file widgets provide the ``IWidget`` interface::
 
@@ -54,6 +52,9 @@ We also need to register the templates for the widgets::
 Regression tests
 ----------------
 
+AJAX form validation makes ``MultiFileConverter.toFieldValue`` break
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 When an AJAX form validation is triggered, the value of the widget is extracted is a list o file
 names. We have to make sure ``MultiFileConverter.toFieldValue`` won't break in this situation::
 
@@ -64,3 +65,30 @@ names. We have to make sure ``MultiFileConverter.toFieldValue`` won't break in t
     >>> converter = MultiFileConverter(field, widget)
     >>> converter.toFieldValue([u'', u'filename1.txt', u'filename2.txt'])
     []
+
+Filename contains full path
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Internet Explorer <= 7 sends the full path of the file being uploaded, including directories.
+``MultiFileConverter.toFieldValue`` must strip the directories and leave only the file name::
+
+    >>> from ZPublisher.HTTPRequest import FileUpload
+    >>> from cgi import FieldStorage
+    >>> from tempfile import TemporaryFile
+
+    >>> def create_upload(data, filename):
+    ...     fp = TemporaryFile('w+b')
+    ...     fp.write(data)
+    ...     fp.seek(0)
+    ...     env = {'REQUEST_METHOD':'PUT'}
+    ...     headers = {'content-type':'text/plain',
+    ...                'content-length': str(len(data)),
+    ...                'content-disposition':'attachment; filename=%s' % filename}
+    ...     return FileUpload(FieldStorage(fp=fp, environ=env, headers=headers))
+    >>> up1 = create_upload('abc', 'c:\\foo\\bar\\test.txt')
+    >>> up2 = create_upload('xyz', 'test.txt')
+    >>> files = converter.toFieldValue([up1, up2])
+    >>> files[0].filename
+    u'test.txt'
+    >>> files[1].filename
+    u'test.txt'
