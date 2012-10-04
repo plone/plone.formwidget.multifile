@@ -31,7 +31,6 @@ setup(name='plone.formwidget.multifile',
         'plone.z3cform',
         'plone.namedfile',
         'plone.formwidget.namedfile',
-        'plone.app.drafts',
         # -*- Extra requirements: -*-
         ],
       tests_require=tests_require,

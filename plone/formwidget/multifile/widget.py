@@ -63,24 +63,17 @@ class MultiFileWidget(MultiWidget):
 
             view_name = self.name[len(self.form.prefix):]
             view_name = view_name[len(self.form.widgets.prefix):]
-            drafts = 0
 
             for i, value in enumerate(converted_value):
-                form_value = 'index:%s'%(i-drafts)
-                try:
-                    index = own.index(value)
-                    download_url = '%s/++widget++%s/%i/@@download/%s' % (
-                        self.request.getURL(),
-                        view_name,
-                        index,
-                        value.filename,
-                        )
-                except (IndexError, ValueError):
-                    download_url = None
-                    if hasattr(value, 'draftName'):
-                        form_value = 'new:%s'%value.draftName
-                        drafts += 1
-            
+                form_value = 'index:%s' % i
+                index = own.index(value)
+                download_url = '%s/++widget++%s/%i/@@download/%s' % (
+                    self.request.getURL(),
+                    view_name,
+                    index,
+                    value.filename,
+                )
+
                 yield self.render_file(form_value, value, download_url)
 
     def render_file(self, form_value, file_, download_url):
@@ -92,7 +85,7 @@ class MultiFileWidget(MultiWidget):
             size = file_.getSize()
         except AttributeError:
             size = file_.tell()
-        
+
         options = {'value': form_value,
                    'icon': '/'.join((context.portal_url(),
                                      get_icon_for(context, file_))),

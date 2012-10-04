@@ -1,40 +1,44 @@
-<tal:WIDGET tal:define="portal_url view/better_context/portal_url">
+<tal:i18n
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  i18n:domain="plone.formwidget.multifile">
 
-  <script src="multifile.js"
-  	  type="text/javascript"
-  	  tal:attributes="src string:$portal_url/++resource++multifile.js">
-  </script>
-  
-  <div class="multi-file">
-    <div tal:attributes="id view/get_uploader_id;
-                         ref view/name"
-         tal:condition="view/editing">
+  <tal:WIDGET tal:define="portal_url view/better_context/portal_url">
 
-      <div class="multi-file-picker">
-         <input type="file" multiple="yes"
-		tal:attributes="name string:${view/name}:list"
-		/>
+    <script src="multifile.js"
+            type="text/javascript"
+            tal:attributes="src string:$portal_url/++resource++multifile.js">
+    </script>
 
-	 <div class="multi-file-placeholder" style="display:none">
-	   <span class="discreet">
-	     &mdash;
-	     <span class="description" i18n:translate="">unsaved</span>
-	   </span>
-	   <span class="remove discreet">
-	     &mdash;
-	     <a href="#" class="multi-file-remove-file"
-		i18n:translate="link_remove_file"
-		>remove</a>
-	   </span>
-	 </div>
+    <div class="multi-file">
+      <div tal:attributes="id view/get_uploader_id;
+                           ref view/name"
+           tal:condition="view/editing">
+
+        <div class="multi-file-picker">
+          <input type="file" multiple="yes" tal:attributes="name string:${view/name}:list" />
+
+          <div class="multi-file-placeholder" style="display:none">
+            <span class="discreet">
+              &mdash;
+              <span class="description" i18n:translate="label_unsaved_file">unsaved</span>
+            </span>
+            <span class="remove discreet">
+              &mdash;
+              <a href="#" class="multi-file-remove-file" i18n:translate="link_remove_file">
+                remove
+              </a>
+            </span>
+          </div>
+        </div>
+
       </div>
-      
+
+      <ul class="multi-file-files">
+        <li tal:repeat="html view/get_data"
+            tal:replace="structure html" />
+      </ul>
     </div>
 
-    <ul class="multi-file-files">
-      <li tal:repeat="html view/get_data"
-          tal:replace="structure html" />
-    </ul>
-  </div>
+  </tal:WIDGET>
 
-</tal:WIDGET>
+</tal:i18n>

@@ -2,11 +2,8 @@ Introduction
 ============
 
 `plone.formwidget.multifile` is a z3c.form-widget which lets users
-upload multiple files, either at once, or in batches using repeat form
+upload multiple files, either at once, or in batches using repeated form
 submissions.
-
-The widget relies on `plone.app.drafts` to save uploaded files into a
-temporary container. This is transparent to the user.
 
 Browsers that do not implement the file input "multiple" attribute are
 supported via javascript adding of multiple file inputs. This also works 

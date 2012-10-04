@@ -1,0 +1,5 @@
+msgid "link_remove_file"
+msgstr "remover"
+
+msgid "label_unsaved_file"
+msgstr "não salvo"
