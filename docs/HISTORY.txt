@@ -1,8 +1,8 @@
 Changelog
 =========
 
-1.0a2 (unreleased)
-------------------
+1.0a2-html5 (2012-10-15)
+------------------------
 
 * Removed integration with jQuery plugin. Instead we use HTML and javascript, 
   and when applicable, the "multiple" extension from HTML5 which lets a
