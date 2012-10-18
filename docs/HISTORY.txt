@@ -4,8 +4,7 @@ Changelog
 1.0a3-html5 (unreleased)
 ------------------------
 
-- Nothing changed yet.
-
+* Fixed bug: failed validation makes ``MultiFileWidget.get_data`` break.
 
 1.0a2-html5 (2012-10-15)
 ------------------------
