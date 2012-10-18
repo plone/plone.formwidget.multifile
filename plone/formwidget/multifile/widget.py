@@ -1,6 +1,6 @@
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.utils import get_icon_for
-
+from plone.namedfile.file import INamedFile
 from z3c.form.interfaces import IFieldWidget, IDataConverter
 from z3c.form.widget import FieldWidget
 from z3c.form.widget import MultiWidget, Widget
@@ -47,30 +47,35 @@ class MultiFileWidget(MultiWidget):
         return self.mode == 'input'
 
     def get_data(self):
-        """
+        """Return an iterable of HTML snippets representing the files already
+        stored on the context and allowing to download it.
+        If the widget is in input mode then removal is allowed too.
         """
         if self.value:
-            # sometimes the value contains the strings from the form,
-            # sometimes it's already converted by the converter. But
-            # if we have errors and we are trying to add a new file
-            # (thats when entry is a unicode string) we need to put
-            # that string again in the form since we did not store the
-            # file yet, but we can get the file from the converter..
+            # Depending on when this gets called we'll have INamedFile's,
+            # strings ("index:N") or FileUpload's (on failed validations).
+            # We have to filter out the FileUpload's since the uploads are gone
+            # and we can do nothing about it.
+            sub_values = [
+                i for i in self.value
+                if INamedFile.providedBy(i) or isinstance(i, basestring)
+            ]
+
             converter = IDataConverter(self)
-            converted_value = converter.toFieldValue(self.value)
+            converted_value = converter.toFieldValue(sub_values)
 
-            own = list(self.value)
-
-            view_name = self.name[len(self.form.prefix):]
-            view_name = view_name[len(self.form.widgets.prefix):]
+            if self.form is not None:
+                view_name = self.name[len(self.form.prefix):]
+                view_name = view_name[len(self.form.widgets.prefix):]
+            else:
+                view_name = ''
 
             for i, value in enumerate(converted_value):
                 form_value = 'index:%s' % i
-                index = own.index(value)
                 download_url = '%s/++widget++%s/%i/@@download/%s' % (
                     self.request.getURL(),
                     view_name,
-                    index,
+                    i,
                     value.filename,
                 )
 

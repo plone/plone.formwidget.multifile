@@ -21,8 +21,12 @@ Test setup::
     >>> from ZPublisher.HTTPRequest import FileUpload
     >>> from cgi import FieldStorage
     >>> from tempfile import TemporaryFile
+    >>> from zope import schema
     >>> class IMockContent(Interface):
-    ...     file = NamedFile(title=u'A file field')
+    ...     file = schema.List(
+    ...         title=u'A file.',
+    ...         value_type=NamedFile(),
+    ...     )
     >>> class IMockContainer(Interface):
     ...     pass
     >>> class MockForm(object):
@@ -134,3 +138,21 @@ Internet Explorer <= 7 sends the full path of the file being uploaded, including
     >>> files[1].filename
     u'test.txt'
 
+Failed validation makes ``MultiFileWidget.get_data`` break
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If we submit a form and a validation fails then when rendering the form again the value of the
+widget will contain ``FileUpload`` instances, corresponding to the files the user tried to upload.
+It was breaking ``MultiFileWidget.get_data`` because the uploads are gone in this case::
+
+    >>> from z3c.form.interfaces import IFieldWidget, IDataConverter
+    >>> from plone.formwidget.multifile.interfaces import IMultiFileWidget
+    >>> zope.component.provideAdapter(
+    ...     factory=lambda x: MultiFileConverter(IMockContent['file'], x),
+    ...     adapts=(IMultiFileWidget,),
+    ...     provides=IDataConverter
+    ... )
+    >>> widget = MultiFileFieldWidget(IMockContent['file'], request)
+    >>> widget._value = [create_upload('content', 'test.txt')]
+    >>> list(widget.get_data())
+    []
