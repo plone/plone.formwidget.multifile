@@ -19,50 +19,10 @@
       permission="zope.Public"
       />
 
-  <!--     <genericsetup:registerProfile -->
-  <!--         name="default" -->
-  <!--         title="Querystring formwidget" -->
-  <!--         description="Querystring formwidget for use with the contentlisting tile" -->
-  <!--         directory="profiles/default" -->
-  <!--         provides="Products.GenericSetup.interfaces.EXTENSION" -->
-  <!--         /> -->
-
-  <!-- register some resources -->
-
-  <!-- upload to session view -->
-  <browser:view
-      name="multi-file-upload-file"
-      class=".widget.UploadFileToSessionView"
-      for="*"
-      permission="zope.Public"
-      />
-
-  <!-- temporary file handler adapter -->
-  <adapter factory=".temporaryfile.TemporaryFileHandler" />
-
-  <!-- RESOURCES -->
   <browser:resource
       name="multifile.js"
       file="resources/multifile.js"/>
 
-  <browser:resource
-      name="jquery.uploadify.js"
-      file="resources/jquery.uploadify.v2.1.0.min.js"/>
-
-  <browser:resource
-      name="uploadify.swfobject.js"
-      file="resources/swfobject.js"/>
-
-  <browser:resource
-      name="uploadify.swf"
-      file="resources/uploadify.swf"/>
-
-  <browser:resource
-      name="uploadify.css"
-      file="resources/uploadify.css"/>
-
-  <browser:resource
-      name="cancel.png"
-      image="resources/cancel.png"/>
+  <i18n:registerTranslations directory="locales" />
 
 </configure>

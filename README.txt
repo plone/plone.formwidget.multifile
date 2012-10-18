@@ -1,16 +1,14 @@
 Introduction
 ============
 
-`plone.formwidget.multifile` is a z3c.form-widget based on jQuery 
-`uploadify <http://www.uploadify.com>`_ plugin, which uses flash for 
-uploading.
+`plone.formwidget.multifile` is a z3c.form-widget which lets users
+upload multiple files, either at once, or in batches using repeated form
+submissions.
 
-Using flash makes it possible to select multiple files at once in the file
-selection dialog provided by the browser / operating system. After selecting
-the files the flash plugin will upload each file by once and the files are
-then stored in a draft
-(`plone.app.drafts <http://pypi.python.org/pypi/plone.app.drafts>`_). When
-submitting the form the converter will get the files from the drafts storage.
+Browsers that do not implement the file input "multiple" attribute are
+supported via javascript adding of multiple file inputs. This also works 
+with browsers that do support "multiple", and allows users to add and 
+remove files in bundles. Upload does not occur until the form is saved. 
 
 
 Usage
@@ -35,6 +33,6 @@ Using the widget is quiet easy::
 Limitations
 -----------
 
-Since the flash plugin submits the files it's not possible to use it with
-HTTP basic authentication. Currently the widget passes the __ac cookie to
-the flash plugin for authentication.
+We do not yet support ordering.
+There is no fallback for non-html5, non-javascript browsers. They will
+only be able to upload 1 file at a time.
