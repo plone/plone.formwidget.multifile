@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '1.0a3-html5.dev0'
+version = '1.0a2-dev'
 
 tests_require = [
     'zope.app.testing',
