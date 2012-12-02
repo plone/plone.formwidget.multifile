@@ -1,12 +1,19 @@
 Changelog
 =========
 
-
 1.0a2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+* Removed integration with jQuery plugin. Instead we use HTML and javascript, 
+  and when applicable, the "multiple" extension from HTML5 which lets a
+  user upload multiple files at once.
+  [tmog]
 
+* Fix minor bugs on the new non-flash implementation.
+  [rafaelbco]
+
+* Removed dependency on plone.app.drafts.
+  [rafaelbco]
 
 1.0a1 (2011-09-13)
 ------------------

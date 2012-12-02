@@ -1,4 +1,6 @@
-<tal:i18n i18n:domain="plone.formwidget.multifile">
+<tal:i18n
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  i18n:domain="plone.formwidget.multifile">
 
   <li class="multi-file-file">
 
@@ -12,16 +14,18 @@
               class="filename"/>
     </a>
 
-    <span class="discreet" tal:condition="options/size">
+    <span class="discreet">
       &mdash;
-      <tal:size replace="options/size" /> KB
+      <tal:size replace="options/size | nothing" /> KB
     </span>
 
     <tal:EDITABLE tal:condition="options/editable">
       <span class="discreet">
         &mdash;
-        <a href="" class="multi-file-remove-file"
-           i18n:translate="link_remove_file">remove</a>
+        <a href="#" class="multi-file-remove-file"
+           i18n:translate="link_remove_file"
+	   onclick="jQuery(this).parents('.multi-file-file:first').remove(); return false"
+	   >remove</a>
       </span>
 
       <input type="hidden"
