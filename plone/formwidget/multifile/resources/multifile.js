@@ -1,15 +1,15 @@
 jQuery(document).ready(function($) {
 
-    var changeHandler = function(e) {
-        var element = e.target;
-        var $element = $(element);
+    function changeHandler() {
+        var element = e.target,
+            $element = $(element),
+            name = '';
 
         if (! $element.is(":visible") ) {
-            return false
-        };
+            return false;
+        }
 
-        name = '';
-        if (element.files != undefined) {
+        if (element.files !== undefined) {
             filenames = [];
             $.each(element.files, function(i, v) {
                 filenames.push(v.name);
@@ -25,14 +25,14 @@ jQuery(document).ready(function($) {
         new_picker.insertBefore($element.parent());
         $element.siblings('.multi-file-placeholder').prepend(name).show();
         $element.hide();
-    };
+    }
 
     /* Attach a handler to the change event of all file inputs specified by the given selector.
      *
      * This function makes sure behavior will be consistent between IE and other browsers.
      * See: http://stackoverflow.com/a/2876677
      */
-    var bindFileInputChangeEvent = function(selector, handler) {
+    function bindFileInputChangeEvent(selector, handler) {
         if ($.browser.msie) {
             $(selector).click(function(e) {
                 setTimeout(
