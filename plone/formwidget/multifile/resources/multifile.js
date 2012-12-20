@@ -1,13 +1,21 @@
 jQuery(document).ready(function($) {
 
-    function changeHandler() {
+    // When multiple widgets are the same form then this JS is included multiple times.
+    // We need the following code to make sure this event handler will execute only once.
+    if (window.__plone_formwidget_multifile_readyExecuted) {
+        return;
+    }
+    window.__plone_formwidget_multifile_readyExecuted = true;
+
+    /* Event handler of the change event of the input[type=file]'s.
+     *
+     * When a file is selected then a new entry on the list of files to be uploaded is created
+     * by cloning the parent element and unhiding the filename part.
+     */
+    function changeHandler(e) {
         var element = e.target,
             $element = $(element),
             name = '';
-
-        if (! $element.is(":visible") ) {
-            return false;
-        }
 
         if (element.files !== undefined) {
             filenames = [];
@@ -24,7 +32,6 @@ jQuery(document).ready(function($) {
         new_picker.find('input').val('');
         new_picker.insertBefore($element.parent());
         $element.siblings('.multi-file-placeholder').prepend(name).show();
-        $element.hide();
     }
 
     /* Attach a handler to the change event of all file inputs specified by the given selector.
@@ -49,8 +56,10 @@ jQuery(document).ready(function($) {
         }
     }
 
+    // Bind the event handler of the change event of the input[type=file]'s.
     bindFileInputChangeEvent('.multi-file-picker input', changeHandler);
 
+    // Bind the event handler for the "remove file" link.
     $('.multi-file-picker .multi-file-remove-file').click(function(e) {
         if ($('.multi-file-picker').length > 1) {
             $(this).parents('.multi-file-picker:first').remove();
@@ -58,4 +67,13 @@ jQuery(document).ready(function($) {
 
         return false;
     });
+
+    // Bind the event handler for the "add files" link.
+    $('.multi-file-add-files').click(function() {
+        $(this).parent().find('input[type=file]:first').click();
+        return false;
+    });
+
+    // Hide the input[type=file]'s
+    $('.multi-file-picker input[type=file]').hide();
 });

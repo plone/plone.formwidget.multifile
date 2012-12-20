@@ -14,6 +14,10 @@
                            ref view/name"
            tal:condition="view/editing">
 
+        <a href="#" class="multi-file-add-files" i18n:translate="link_add_files">
+          add files
+        </a>
+
         <div class="multi-file-picker">
           <input type="file" multiple="yes" tal:attributes="name string:${view/name}:list" />
 

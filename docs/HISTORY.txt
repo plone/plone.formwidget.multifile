@@ -4,8 +4,10 @@ Changelog
 1.0a3 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+* Changed the UI so now there's a link to "add files" instead of an standard
+  input[type=file] HTML element (which still exists, but is hidden). Users were complaining 
+  that the old UI was confusing since the textbox of the input[type=file] 
+  element was always empty.
 
 1.0a2 (2012-12-20)
 ------------------
