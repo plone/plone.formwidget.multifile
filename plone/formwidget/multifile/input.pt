@@ -12,14 +12,18 @@
     <div class="multi-file">
       <div tal:attributes="id view/get_uploader_id;
                            ref view/name"
-           tal:condition="view/editing">
+           tal:condition="view/editing"
+           tal:define="input_name string:${view/name}:list;
+                       input_id string:${view/name}:0;">
 
-        <a href="#" class="multi-file-add-files" i18n:translate="link_add_files">
+        <a class="multi-file-add-files" href="#" i18n:translate="link_add_files">
           add files
         </a>
 
         <div class="multi-file-picker">
-          <input type="file" multiple="yes" tal:attributes="name string:${view/name}:list" />
+          <input type="file" multiple="yes"
+            tal:attributes="name input_name;
+                            id input_id;" />
 
           <div class="multi-file-placeholder" style="display:none">
             <span class="discreet">
@@ -38,8 +42,7 @@
       </div>
 
       <ul class="multi-file-files">
-        <li tal:repeat="html view/get_data"
-            tal:replace="structure html" />
+        <li tal:repeat="html view/get_data" tal:replace="structure html" />
       </ul>
     </div>
 

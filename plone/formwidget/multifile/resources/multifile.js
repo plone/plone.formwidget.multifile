@@ -15,10 +15,17 @@ jQuery(document).ready(function($) {
     function changeHandler(e) {
         var element = e.target,
             $element = $(element),
-            name = '';
+            $parent = $element.parent(),
+            name = '',
+            filenames = [],
+            $newPicker,
+            $newInput,
+            $addFilesLink,
+            idParts,
+            index,
+            newInputId;
 
         if (element.files !== undefined) {
-            filenames = [];
             $.each(element.files, function(i, v) {
                 filenames.push(v.name);
             });
@@ -28,9 +35,26 @@ jQuery(document).ready(function($) {
             name = $element.val().replace(/^.*[\\\/]/, '');
         }
 
-        new_picker = $element.parent().clone(true);
-        new_picker.find('input').val('');
-        new_picker.insertBefore($element.parent());
+        // Calculate the new id for the new input[type=file].
+        idParts = $element.attr('id').split(':');
+        index = parseInt(idParts[1], 10) + 1;
+        newInputId = idParts[0] + ':' + index;
+
+        // If the "add new link" is a label then change the "for" attribute to point to the new
+        // input[type=file].
+        $addFilesLink = $parent.siblings('.multi-file-add-files');
+        if ($addFilesLink.attr('for')) {
+            $addFilesLink.attr('for', newInputId);
+        }
+
+        // Create new file picker.
+        $newPicker = $parent.clone(true);
+        $newInput = $newPicker.find('input');
+        $newInput.val('');
+        $newInput.attr('id', newInputId);
+        $newPicker.insertBefore($parent);
+
+        // Show the filename of the selected files.
         $element.siblings('.multi-file-placeholder').prepend(name).show();
     }
 
@@ -61,19 +85,46 @@ jQuery(document).ready(function($) {
 
     // Bind the event handler for the "remove file" link.
     $('.multi-file-picker .multi-file-remove-file').click(function(e) {
-        if ($('.multi-file-picker').length > 1) {
-            $(this).parents('.multi-file-picker:first').remove();
-        }
-
+        $(this).parents('.multi-file-picker:first').remove();
         return false;
     });
 
-    // Bind the event handler for the "add files" link.
-    $('.multi-file-add-files').click(function() {
-        $(this).parent().find('input[type=file]:first').click();
-        return false;
-    });
+    // Problem: When an file-input is opened via a scripted, forced click() event, IE won't let
+    // you submit the form.
+    //
+    // Solution: Replace <a>add new files</a> by a label for the input. If you click it, IE will
+    // open the file dialog.
+    //
+    // Caveats:
+    // - The input cannot be hidden with "display: none" for this to work. We have to hide the
+    //   input in another way.
+    // - On other browsers clicking on the label won't open the file dialog. So we add an event
+    //   handler to do that.
+    //
+    // See: https://gist.github.com/4337047
+    var $addFilesLink = $('.multi-file-add-files');
+    if ($.browser.msie) {
+        $addFilesLink.replaceWith(function() {
+            var $this = $(this),
+                $label;
+
+            return $('<label/>', {
+                'for': $this.siblings('.multi-file-picker').find('input[type=file]').attr('id'),
+                'text': $this.text()
+            });
+        });
+    } else {
+        $addFilesLink.click(function() {
+            var $this = $(this);
+            $this.siblings('.multi-file-picker').find('input[type=file]').click();
+            return false;
+        });
+    }
 
     // Hide the input[type=file]'s
-    $('.multi-file-picker input[type=file]').hide();
+    // We cannot simply use the hide() function because if we do IE won't open the file dialog when
+    // the label of the input is clicked.
+    var $input = $('.multi-file-picker input[type=file]');
+    $input.css('width', '0');
+    $input.css('height', '0');
 });
