@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0a5 (unreleased)
+1.0a5 (2013-01-21)
 ------------------
 
 * Fixed bug on IE: When an file-input is opened via a scripted, forced click()
