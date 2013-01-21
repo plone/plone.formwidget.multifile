@@ -3,3 +3,6 @@ msgstr "remover"
 
 msgid "label_unsaved_file"
 msgstr "não salvo"
+
+msgid "link_add_files"
+msgstr "incluir arquivo(s)"
