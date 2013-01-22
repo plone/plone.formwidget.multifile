@@ -7,6 +7,10 @@ jQuery(document).ready(function($) {
     }
     window.__plone_formwidget_multifile_readyExecuted = true;
 
+
+    var isIE = $.browser.msie;
+    var isIE7 = isIE && ($.browser.version.charAt(0) == '7');
+
     /* Event handler of the change event of the input[type=file]'s.
      *
      * When a file is selected then a new entry on the list of files to be uploaded is created
@@ -43,6 +47,7 @@ jQuery(document).ready(function($) {
         // If the "add new link" is a label then change the "for" attribute to point to the new
         // input[type=file].
         $addFilesLink = $parent.siblings('.multi-file-add-files');
+        alert($addFilesLink.html());
         if ($addFilesLink.attr('for')) {
             $addFilesLink.attr('for', newInputId);
         }
@@ -53,6 +58,9 @@ jQuery(document).ready(function($) {
         $newInput.val('');
         $newInput.attr('id', newInputId);
         $newPicker.insertBefore($parent);
+
+        // Hide the current file picker.
+        $element.hide();
 
         // Show the filename of the selected files.
         $element.siblings('.multi-file-placeholder').prepend(name).show();
@@ -84,11 +92,15 @@ jQuery(document).ready(function($) {
     bindFileInputChangeEvent('.multi-file-picker input', changeHandler);
 
     // Bind the event handler for the "remove file" link.
-    $('.multi-file-picker .multi-file-remove-file:first').click(function(e) {
+    $('.multi-file-picker .multi-file-remove-file').click(function(e) {
         $(this).parents('.multi-file-picker:first').remove();
         return false;
     });
 
+
+    // We want to hide the input[type=file] and open the file dialog when the user clicks
+    // on the "add files" link.
+    //
     // Problem: When an file-input is opened via a scripted, forced click() event, IE won't let
     // you submit the form.
     //
@@ -96,35 +108,38 @@ jQuery(document).ready(function($) {
     // open the file dialog.
     //
     // Caveats:
+    // - It doesn't work for IE 7. So we just hide the "add files" link and don't hide the file
+    //   input.
     // - The input cannot be hidden with "display: none" for this to work. We have to hide the
     //   input in another way.
-    // - On other browsers clicking on the label won't open the file dialog. So we add an event
-    //   handler to do that.
+    // - On other browsers clicking on the label won't open the file dialog.
     //
     // See: https://gist.github.com/4337047
     var $addFilesLink = $('.multi-file-add-files');
-    if ($.browser.msie) {
-        $addFilesLink.replaceWith(function() {
-            var $this = $(this),
-                $label;
-
-            return $('<label/>', {
-                'for': $this.siblings('.multi-file-picker').find('input[type=file]').attr('id'),
-                'text': $this.text()
-            });
-        });
+    if (isIE7) {
+        $addFilesLink.remove();
     } else {
-        $addFilesLink.click(function() {
-            var $this = $(this);
-            $this.parent().find('input[type=file]:first').click();
-            return false;
-        });
-    }
+        var $input = $('.multi-file-picker input[type=file]');
+        $input.css('position', 'absolute');
+        $input.css('left', '-99999px');
 
-    // Hide the input[type=file]'s
-    // We cannot simply use the hide() function because if we do IE won't open the file dialog when
-    // the label of the input is clicked.
-    var $input = $('.multi-file-picker input[type=file]');
-    $input.css('width', '0');
-    $input.css('height', '0');
+        if (isIE) {
+            $addFilesLink.replaceWith(function() {
+                var $this = $(this),
+                    $label;
+
+                return $('<label/>', {
+                    'for': $this.parent().find('input[type=file]:first').attr('id'),
+                    'text': $this.text(),
+                    'class': $addFilesLink.attr('class')
+                });
+            });
+        } else {
+            $addFilesLink.click(function() {
+                var $this = $(this);
+                $this.parent().find('input[type=file]:first').click();
+                return false;
+            });
+        }
+    }
 });
