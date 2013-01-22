@@ -84,7 +84,7 @@ jQuery(document).ready(function($) {
     bindFileInputChangeEvent('.multi-file-picker input', changeHandler);
 
     // Bind the event handler for the "remove file" link.
-    $('.multi-file-picker .multi-file-remove-file').click(function(e) {
+    $('.multi-file-picker .multi-file-remove-file:first').click(function(e) {
         $(this).parents('.multi-file-picker:first').remove();
         return false;
     });
@@ -116,7 +116,7 @@ jQuery(document).ready(function($) {
     } else {
         $addFilesLink.click(function() {
             var $this = $(this);
-            $this.siblings('.multi-file-picker').find('input[type=file]').click();
+            $this.parent().find('input[type=file]:first').click();
             return false;
         });
     }

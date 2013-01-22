@@ -4,15 +4,14 @@ Changelog
 1.0a6 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Fixed bug: "add files" link was opening multiple file dialogs.
 
 1.0a5 (2013-01-21)
 ------------------
 
 * Fixed bug on IE: When an file-input is opened via a scripted, forced click()
-  event, IE won't let you submit the form.
-* Updated pt_BR translation.
+  event, IE won't let you submit the form. [rafaelbco]
+* Updated pt_BR translation. [rafaelbco]
 
 1.0a4 (2012-12-20)
 ------------------
