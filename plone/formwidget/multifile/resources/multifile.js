@@ -47,7 +47,6 @@ jQuery(document).ready(function($) {
         // If the "add new link" is a label then change the "for" attribute to point to the new
         // input[type=file].
         $addFilesLink = $parent.siblings('.multi-file-add-files');
-        alert($addFilesLink.html());
         if ($addFilesLink.attr('for')) {
             $addFilesLink.attr('for', newInputId);
         }
