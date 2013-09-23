@@ -4,46 +4,45 @@
 
   <tal:WIDGET tal:define="portal_url context/@@plone_portal_state/portal_url">
 
-    <script src="multifile.js"
-            type="text/javascript"
-            tal:attributes="src string:$portal_url/++resource++multifile.js">
-    </script>
+    <div class="multi-file"
+         tal:define="input_name string:${view/name}:list;">
+      <tal:comment replace="nothing">
+        Already uploaded files have to be listed first, otherwise
+        they get overwritten by new uploads.
+      </tal:comment>
+      <ul class="multi-file-files">
+        <li tal:repeat="html view/get_data" tal:replace="structure html" />
+        <li id="multi-file-placeholder"
+            class="multi-file-file"
+            style="display:none"
+            tal:condition="view/editing">
+          <span class="filename">filename placeholder</span>
+          <span class="discreet">
+            &mdash;
+            <span class="description" i18n:translate="label_unsaved_file">unsaved</span>
+          </span>
+          <span class="remove discreet">
+            &mdash;
+            <a href="#" class="multi-file-remove-file" i18n:translate="link_remove_file">
+              remove
+            </a>
+          </span>
+        </li>
+      </ul>
 
-    <div class="multi-file">
-      <div tal:attributes="id view/get_uploader_id;
-                           ref view/name"
-           tal:condition="view/editing"
-           tal:define="input_name string:${view/name}:list;
-                       input_id string:${view/name}:0;">
-
-        <a class="multi-file-add-files" href="#" i18n:translate="link_add_files">
-          add files
-        </a>
+      <tal:comment replace="nothing">
+        Markup to upload new files
+      </tal:comment>
+      <div tal:condition="view/editing">
 
         <div class="multi-file-picker">
-          <input type="file" multiple="yes"
-            tal:attributes="name input_name;
-                            id input_id;" />
+          <input type="file" multiple="multiple"
+            tal:attributes="name input_name" />
 
-          <div class="multi-file-placeholder" style="display:none">
-            <span class="discreet">
-              &mdash;
-              <span class="description" i18n:translate="label_unsaved_file">unsaved</span>
-            </span>
-            <span class="remove discreet">
-              &mdash;
-              <a href="#" class="multi-file-remove-file" i18n:translate="link_remove_file">
-                remove
-              </a>
-            </span>
-          </div>
         </div>
 
       </div>
 
-      <ul class="multi-file-files">
-        <li tal:repeat="html view/get_data" tal:replace="structure html" />
-      </ul>
     </div>
 
   </tal:WIDGET>

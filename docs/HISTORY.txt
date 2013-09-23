@@ -24,6 +24,15 @@ Changelog
 - Base files shown by the widget on the actual fields content instead of a mixture
   of request data and converter magic.
   [gaudenz]
+- Improve input template and JavaScript
+  - Append file inputs below the file list to not overwrite existing files
+  - Remove Hacks for IE7. They no longer work with recent jQuery versions and
+    IE7 is mostly irrelevant by now.
+  - Use standard file input widget instead of custom add link. This is what people
+    expect and as a bonus is already translated. If people want custom links they can
+    still override the template.
+  - Integrate not yet uploaded files into the same file list.
+  [gaudenz]
 
 1.0a6 (2013-01-22)
 ------------------
