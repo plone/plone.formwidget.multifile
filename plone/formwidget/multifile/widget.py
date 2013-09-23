@@ -40,7 +40,6 @@ class MultiFileWidget(Widget):
         return self.form.context
 
     def render(self):
-        self.update()
         if self.mode == 'input':
             return self.input_template(self)
         else:
