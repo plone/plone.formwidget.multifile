@@ -6,7 +6,7 @@ from plone.namedfile.utils import set_headers, stream_data
 from plone.namedfile.file import INamedFile
 from z3c.form.interfaces import IFieldWidget, IDataConverter, IDataManager, NO_VALUE
 from z3c.form.widget import FieldWidget
-from z3c.form.widget import MultiWidget, Widget
+from z3c.form.widget import Widget
 from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -26,8 +26,7 @@ def decode(s):
     """
     return "".join(map(chr, map(int, s.split("d"))))
 
-
-class MultiFileWidget(MultiWidget):
+class MultiFileWidget(Widget):
     implements(IMultiFileWidget)
 
     klass = u'multi-file-widget'

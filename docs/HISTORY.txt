@@ -12,6 +12,9 @@ Changelog
   [gaudenz]
 - Add @@download BrowserView for file downloads
   [gaudenz]
+- Base widget on z3c.form.widget.Widget instead of MultiWidget. The MultiWidget
+  is for combining different widgets into one.
+  [gaudenz]
 
 1.0a6 (2013-01-22)
 ------------------
