@@ -33,6 +33,8 @@ Changelog
     still override the template.
   - Integrate not yet uploaded files into the same file list.
   [gaudenz]
+- Add german translation
+  [gaudenz]
 
 1.0a6 (2013-01-22)
 ------------------
