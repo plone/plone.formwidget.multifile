@@ -1,18 +1,17 @@
-from zope.component import queryMultiAdapter
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.namedfile.interfaces import INamed
 from plone.namedfile.utils import safe_basename
 from z3c.form.converter import BaseDataConverter
 from z3c.form.interfaces import IDataManager
+from zope.component import queryMultiAdapter, adapts
 from zope.schema.interfaces import ISequence
 from ZPublisher.HTTPRequest import FileUpload
-import zope.component
 
 
 class MultiFileConverter(BaseDataConverter):
     """Converter for multi file widgets used on `schema.List` fields."""
 
-    zope.component.adapts(ISequence, IMultiFileWidget)
+    adapts(ISequence, IMultiFileWidget)
 
     def toWidgetValue(self, value):
         """Converts the value to a form used by the widget."""

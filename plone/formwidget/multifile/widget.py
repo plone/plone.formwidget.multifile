@@ -1,16 +1,12 @@
 from Acquisition import aq_inner
-
 from plone.namedfile.utils import set_headers, stream_data
+from Products.Five.browser import BrowserView
 from z3c.form.interfaces import IFieldWidget, IDataManager, NO_VALUE
-from z3c.form.widget import FieldWidget
-from z3c.form.widget import Widget
-from zope.component import getMultiAdapter
+from z3c.form.widget import FieldWidget, Widget
 from zope.browserpage.viewpagetemplatefile import ViewPageTemplateFile
-
+from zope.component import getMultiAdapter, queryMultiAdapter
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse, NotFound
-from Products.Five.browser import BrowserView
-from zope.component import getMultiAdapter, queryMultiAdapter
 
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.utils import get_icon_for
