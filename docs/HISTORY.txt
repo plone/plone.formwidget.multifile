@@ -21,6 +21,9 @@ Changelog
 - Extract FileUpload objects instead of relying on Widget.extract to do the mostly
   right thing.
   [gaudenz]
+- Base files shown by the widget on the actual fields content instead of a mixture
+  of request data and converter magic.
+  [gaudenz]
 
 1.0a6 (2013-01-22)
 ------------------

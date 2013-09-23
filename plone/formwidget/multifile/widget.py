@@ -13,7 +13,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from Products.Five.browser import BrowserView
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, queryMultiAdapter
 
 def encode(s):
     """ encode string
@@ -53,34 +53,27 @@ class MultiFileWidget(Widget):
         stored on the context and allowing to download it.
         If the widget is in input mode then removal is allowed too.
         """
-        if self.value:
-            # Depending on when this gets called we'll have INamedFile's,
-            # strings ("index:N") or FileUpload's (on failed validations).
-            # We have to filter out the FileUpload's since the uploads are gone
-            # and we can do nothing about it.
-            sub_values = [
-                i for i in self.value
-                if INamedFile.providedBy(i) or isinstance(i, basestring)
-            ]
+        dm = queryMultiAdapter((self.context, self.field), IDataManager)
 
-            converter = IDataConverter(self)
-            converted_value = converter.toFieldValue(sub_values)
+        # We check if the context implements the interface containing the field.
+        # There are situations when this is not true, e.g when creating an
+        # object an AJAX form validation is triggered.
+        # In this case the context is the container.
+        # If we do not check this then dm.query() may throw an exception.
+        field_value = (
+            dm.query()
+            if ((dm is not None) and self.field.interface.providedBy(self.context))
+            else None
+        )
 
-            if self.form is not None:
-                view_name = self.name[len(self.form.prefix):]
-                view_name = view_name[len(self.form.widgets.prefix):]
-            else:
-                view_name = ''
+        for i, value in enumerate(field_value):
+            form_value = 'index:%s' % i
+            download_url = '%s/++widget++%s/@@download/%i' % (
+                self.request.getURL(),
+                self.name,
+                i)
 
-            for i, value in enumerate(converted_value):
-                form_value = 'index:%s' % i
-                download_url = '%s/++widget++%s/@@download/%i' % (
-                    self.request.getURL(),
-                    view_name,
-                    i,
-                )
-
-                yield self.render_file(form_value, value, download_url)
+            yield self.render_file(form_value, value, download_url)
 
     def render_file(self, form_value, file_, download_url):
         """Renders the <li> for one file.
