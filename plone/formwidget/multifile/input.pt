@@ -2,7 +2,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   i18n:domain="plone.formwidget.multifile">
 
-  <tal:WIDGET tal:define="portal_url view/better_context/portal_url">
+  <tal:WIDGET tal:define="portal_url context/@@plone_portal_state/portal_url">
 
     <script src="multifile.js"
             type="text/javascript"

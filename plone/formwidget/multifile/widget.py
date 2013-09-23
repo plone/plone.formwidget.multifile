@@ -35,10 +35,6 @@ class MultiFileWidget(Widget):
     display_template = ViewPageTemplateFile('display.pt')
     file_template = ViewPageTemplateFile('file_template.pt')
 
-    @property
-    def better_context(self):
-        return self.form.context
-
     def render(self):
         if self.mode == 'input':
             return self.input_template(self)
@@ -78,7 +74,7 @@ class MultiFileWidget(Widget):
     def render_file(self, form_value, file_, download_url):
         """Renders the <li> for one file.
         """
-        context = self.better_context
+        form_context = self.form.context
 
         try:
             size = file_.getSize()
@@ -86,8 +82,8 @@ class MultiFileWidget(Widget):
             size = file_.tell()
 
         options = {'value': form_value,
-                   'icon': '/'.join((context.portal_url(),
-                                     get_icon_for(context, file_))),
+                   'icon': '/'.join((form_context.portal_url(),
+                                     get_icon_for(form_context, file_))),
                    'filename': file_.filename,
                    'size': int(round(size / 1024)),
                    'download_url': download_url,
