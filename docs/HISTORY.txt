@@ -10,6 +10,8 @@ Changelog
   [erral]
 - Use similar pattern to plone.formwidget.namedfile for the data converter.
   [gaudenz]
+- Add @@download BrowserView for file downloads
+  [gaudenz]
 
 1.0a6 (2013-01-22)
 ------------------

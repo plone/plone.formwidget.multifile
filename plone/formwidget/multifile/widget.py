@@ -1,15 +1,19 @@
+from Acquisition import aq_inner
+
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.utils import get_icon_for
+from plone.namedfile.utils import set_headers, stream_data
 from plone.namedfile.file import INamedFile
-from z3c.form.interfaces import IFieldWidget, IDataConverter
+from z3c.form.interfaces import IFieldWidget, IDataConverter, IDataManager, NO_VALUE
 from z3c.form.widget import FieldWidget
 from z3c.form.widget import MultiWidget, Widget
 from zope.app.component.hooks import getSite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from zope.interface import implements, implementer
-from zope.publisher.interfaces import IPublishTraverse
-
+from zope.publisher.interfaces import IPublishTraverse, NotFound
+from Products.Five.browser import BrowserView
+from zope.component import getMultiAdapter
 
 def encode(s):
     """ encode string
@@ -24,7 +28,7 @@ def decode(s):
 
 
 class MultiFileWidget(MultiWidget):
-    implements(IMultiFileWidget, IPublishTraverse)
+    implements(IMultiFileWidget)
 
     klass = u'multi-file-widget'
 
@@ -72,11 +76,10 @@ class MultiFileWidget(MultiWidget):
 
             for i, value in enumerate(converted_value):
                 form_value = 'index:%s' % i
-                download_url = '%s/++widget++%s/%i/@@download/%s' % (
+                download_url = '%s/++widget++%s/@@download/%i' % (
                     self.request.getURL(),
                     view_name,
                     i,
-                    value.filename,
                 )
 
                 yield self.render_file(form_value, value, download_url)
@@ -119,33 +122,54 @@ class MultiFileWidget(MultiWidget):
         """
         return Widget.extract(self, *args, **kwargs)
 
-    def publishTraverse(self, request, name):
-        widget = self.widgets[int(name)].__of__(self.better_context)
-        # fix some stuff, according to z3c.form.field.FieldWidgets.update
-        widget.name = self.name + '.' + name
-        widget.__name__ = name
-        widget.id = self.name.replace('.', '-')
-        widget.form = self.form
-        widget.ignoreContext = self.ignoreContext
-        widget.ignoreRequest = self.ignoreRequest
-        widget.mode = self.mode
-        widget.update()
-        widget.field.__name__ = name
-
-        # we need to be able to do something like
-        # getattr(widget.context, widget.field.__name__)
-        # and it should return the value
-
-        class objectish_list(list):
-            def __getattr__(self, k):
-                return self[int(k)]
-
-        widget.context = objectish_list(self.value)
-
-        return widget
-
-
 @implementer(IFieldWidget)
 def MultiFileFieldWidget(field, request):
     return FieldWidget(field, MultiFileWidget(request))
 
+
+class Download(BrowserView):
+    """Download a file via ++widget++widget_name/@@download/filename"""
+
+    implements(IPublishTraverse)
+
+    def __init__(self, context, request):
+        super(BrowserView, self).__init__(context, request)
+        self.file_index = None
+        self.content = None
+
+    def publishTraverse(self, request, name):
+
+        try:
+            if self.file_index is None: # ../@@download/file_index
+                self.file_index = int(name)
+                return self
+            elif self.file_index == name:
+                return self
+        except ValueError:
+            # NotFound raised below
+            pass
+
+        raise NotFound(self, name, request)
+
+    def __call__(self):
+
+        if self.context.ignoreContext:
+            raise NotFound("Cannot get the data file from a widget with no context")
+
+        if self.context.form is not None:
+            content = aq_inner(self.context.form.getContent())
+        else:
+            content = aq_inner(self.context.context)
+        field = aq_inner(self.context.field)
+
+        dm = getMultiAdapter((content, field,), IDataManager)
+        file_list = dm.get()
+        try:
+            file_ = file_list[self.file_index]
+        except (IndexError, TypeError):
+            raise NotFound(self, self.file_index, self.request)
+
+        filename = getattr(file_, 'filename', '')
+
+        set_headers(file_, self.request.response, filename=filename)
+        return stream_data(file_)

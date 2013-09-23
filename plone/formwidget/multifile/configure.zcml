@@ -11,12 +11,11 @@
 
   <adapter factory=".converter.MultiFileConverter" />
 
-  <zope:view
-      type="zope.publisher.interfaces.browser.IBrowserRequest"
+  <browser:page
+      name="download"
       for=".interfaces.IMultiFileWidget"
-      provides="zope.app.form.interfaces.IInputWidget"
-      factory=".widget.MultiFileWidget"
-      permission="zope.Public"
+      class=".widget.Download"
+      permission="zope2.View"
       />
 
   <browser:resource
