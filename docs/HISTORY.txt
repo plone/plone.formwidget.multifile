@@ -18,6 +18,9 @@ Changelog
 - Don't call update from render. This is not necessary and can lead to unwanted
   side-effects.
   [gaudenz]
+- Extract FileUpload objects instead of relying on Widget.extract to do the mostly
+  right thing.
+  [gaudenz]
 
 1.0a6 (2013-01-22)
 ------------------

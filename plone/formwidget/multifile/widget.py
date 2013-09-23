@@ -114,11 +114,16 @@ class MultiFileWidget(Widget):
         """
         return 'multi-file-%s' % self.name.replace('.', '-')
 
-    def extract(self, *args, **kwargs):
-        """Use the extrat method of the default Widget since the
-        MultiWidget expects sub-widgets.
+    def extract(self, default=NO_VALUE):
+        """Extract all real FileUpload objects.
         """
-        return Widget.extract(self, *args, **kwargs)
+        try:
+            # only return real uploads and indexes for files already present,
+            # not files created for empty input fields
+            return [f for f in self.request[self.name] if f]
+        except KeyError:
+            # no value stored on the request
+            return default
 
 @implementer(IFieldWidget)
 def MultiFileFieldWidget(field, request):
