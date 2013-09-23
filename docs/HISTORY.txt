@@ -6,10 +6,10 @@ Changelog
 
 - Added Spanish (es) and Basque (eu) translation
   [erral]
-
 - Added PO file generation script
   [erral]
-
+- Use similar pattern to plone.formwidget.namedfile for the data converter.
+  [gaudenz]
 
 1.0a6 (2013-01-22)
 ------------------

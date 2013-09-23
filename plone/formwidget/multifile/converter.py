@@ -1,18 +1,18 @@
 from zope.component import queryMultiAdapter
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
-from plone.namedfile.file import NamedFile
-from plone.namedfile.file import INamedFile
+from plone.namedfile.interfaces import INamed
+from plone.namedfile.utils import safe_basename
 from z3c.form.converter import BaseDataConverter
 from z3c.form.interfaces import IDataManager
-from zope.schema.interfaces import IList
+from zope.schema.interfaces import ISequence
+from ZPublisher.HTTPRequest import FileUpload
 import zope.component
-from utils import basename
 
 
 class MultiFileConverter(BaseDataConverter):
     """Converter for multi file widgets used on `schema.List` fields."""
 
-    zope.component.adapts(IList, IMultiFileWidget)
+    zope.component.adapts(ISequence, IMultiFileWidget)
 
     def toWidgetValue(self, value):
         """Converts the value to a form used by the widget."""
@@ -50,28 +50,58 @@ class MultiFileConverter(BaseDataConverter):
         if value is current_field_value:
             return value
 
+        collection_type = self.field._type
         files = (self._toFieldSubValue(i, current_field_value) for i in value)
-        return [f for f in files if (f is not None)]
+        return collection_type(f for f in files if (f is not None))
 
-    def _toFieldSubValue(self, subvalue, current_field_value):
+    def _toFieldSubValue(self, value, current_field_value):
         """
         Converts a subvalue to an `INamedFile`.
 
         Parameters:
-        subvalue -- The value extracted from the request by the widget.
+        value -- The value extracted from the request by the widget.
         current_field_value -- The current value of the field on the context.
 
-        Return: an `INamedFile` or `None` if the subvalue cannot be converted.
-        """
-        if isinstance(subvalue, basestring) and subvalue.startswith('index:'):
-            index = int(subvalue.split(':')[1])
-            return current_field_value[index]
-        elif INamedFile.providedBy(subvalue):
-            return subvalue
-        else:
-            filename = getattr(subvalue, 'filename', None)
-            if filename:
-                filename = basename(filename)
-                return NamedFile(subvalue, filename=filename.decode('utf-8'))
+        Return:
+        a value of the fields value_type or it's `missing_value` if the value cannot be converted.
 
-        return None
+        See plone.formwidget.namedfile.converter.NamedDataConverter
+        """
+
+        value_type = self.field.value_type._type
+        missing_value = self.field.value_type.missing_value
+
+        if value is None or value == '':
+            return missing_value
+        elif INamed.providedBy(value):
+            return value
+        elif isinstance(value, basestring) and value.startswith('index:'):
+            # we already have the file
+            index = int(value.split(':')[1])
+            try:
+                return current_field_value[index]
+            except IndexError:
+                return missing_value
+        elif isinstance(value, FileUpload):
+            # create a new file
+
+            headers = value.headers
+            filename = safe_basename(value.filename)
+            if filename is not None and not isinstance(filename, unicode):
+                # Work-around for
+                # https://bugs.launchpad.net/zope2/+bug/499696
+                filename = filename.decode('utf-8')
+
+            contentType = 'application/octet-stream'
+            if headers:
+                contentType = headers.get('Content-Type', contentType)
+
+            value.seek(0)
+            data = value.read()
+            if data or filename:
+                return value_type(data=data, contentType=contentType, filename=filename)
+            else:
+                return missing_value
+
+        else:
+            return value_type(data=str(value))
