@@ -2,3 +2,4 @@ plone.formwidget.multifile.egg-info
 build
 dist
 *.mo
+*.pyc
