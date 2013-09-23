@@ -1,30 +1,20 @@
 from Acquisition import aq_inner
 
-from plone.formwidget.multifile.interfaces import IMultiFileWidget
-from plone.formwidget.multifile.utils import get_icon_for
 from plone.namedfile.utils import set_headers, stream_data
-from plone.namedfile.file import INamedFile
-from z3c.form.interfaces import IFieldWidget, IDataConverter, IDataManager, NO_VALUE
+from z3c.form.interfaces import IFieldWidget, IDataManager, NO_VALUE
 from z3c.form.widget import FieldWidget
 from z3c.form.widget import Widget
-from zope.app.component.hooks import getSite
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getMultiAdapter
+from zope.browserpage.viewpagetemplatefile import ViewPageTemplateFile
 
 from zope.interface import implements, implementer
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from Products.Five.browser import BrowserView
 from zope.component import getMultiAdapter, queryMultiAdapter
 
-def encode(s):
-    """ encode string
-    """
-    return "d".join(map(str, map(ord, s)))
+from plone.formwidget.multifile.interfaces import IMultiFileWidget
+from plone.formwidget.multifile.utils import get_icon_for
 
-
-def decode(s):
-    """ decode string
-    """
-    return "".join(map(chr, map(int, s.split("d"))))
 
 class MultiFileWidget(Widget):
     implements(IMultiFileWidget)
@@ -92,16 +82,6 @@ class MultiFileWidget(Widget):
                    }
 
         return self.file_template(**options)
-
-    def update(self):
-        super(MultiFileWidget, self).update()
-        self.portal = getSite()
-
-    def get_uploader_id(self):
-        """Returns the id attribute for the uploader div. This should
-        be uniqe, also when using multiple widgets on the same page.
-        """
-        return 'multi-file-%s' % self.name.replace('.', '-')
 
     def extract(self, default=NO_VALUE):
         """Extract all real FileUpload objects.
