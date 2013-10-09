@@ -45,7 +45,7 @@ class MultiFileWidget(Widget):
         field_value = (
             dm.query()
             if ((dm is not None) and self.field.interface.providedBy(self.context))
-            else None
+            else []
         )
 
         for i, value in enumerate(field_value):
