@@ -45,17 +45,18 @@ class MultiFileWidget(Widget):
         field_value = (
             dm.query()
             if ((dm is not None) and self.field.interface.providedBy(self.context))
-            else []
+            else None
         )
 
-        for i, value in enumerate(field_value):
-            form_value = 'index:%s' % i
-            download_url = '%s/++widget++%s/@@download/%i' % (
-                self.request.getURL(),
-                self.name,
-                i)
+        if field_value:
+            for i, value in enumerate(field_value):
+                form_value = 'index:%s' % i
+                download_url = '%s/++widget++%s/@@download/%i' % (
+                    self.request.getURL(),
+                    self.name,
+                    i)
 
-            yield self.render_file(form_value, value, download_url)
+                yield self.render_file(form_value, value, download_url)
 
     def render_file(self, form_value, file_, download_url):
         """Renders the <li> for one file.
