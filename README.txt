@@ -14,7 +14,7 @@ remove files in bundles. Upload does not occur until the form is saved.
 Usage
 -----
 
-Using the widget is quiet easy::
+Using the widget is quite easy::
 
     >>> from plone.directives import form as directivesform
     >>> from plone.formwidget.multifile import MultiFileFieldWidget
