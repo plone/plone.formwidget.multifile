@@ -4,6 +4,11 @@
 
   <tal:WIDGET tal:define="portal_url context/@@plone_portal_state/portal_url">
 
+    <script src="multifile.js"
+            type="text/javascript"
+            tal:attributes="src string:$portal_url/++resource++multifile.js">
+    </script>
+
     <div class="multi-file"
          tal:define="input_name string:${view/name}:list;">
       <tal:comment replace="nothing">
