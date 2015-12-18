@@ -6,6 +6,8 @@ Changelog
 
 - Fix missing Javascript call that breaks the widget
   [laulaz]
+- Add French and Dutch translations
+  [laulaz]
 
 
 1.1 (2014-03-24)
