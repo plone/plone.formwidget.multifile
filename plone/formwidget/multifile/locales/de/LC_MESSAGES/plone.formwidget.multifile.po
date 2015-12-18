@@ -3,7 +3,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: plone.formwidget.multifile\n"
-"POT-Creation-Date: 2013-09-23 14:52+0000\n"
+"POT-Creation-Date: 2015-12-18 08:13+0000\n"
 "PO-Revision-Date: 2013-09-23 16:59+0200\n"
 "Last-Translator: Gaudenz Steinlin <gaudenz@durcheinandertal.ch>\n"
 "Language-Team: Deutsch <plone-i18n@lists.sourceforge.net>\n"
@@ -17,13 +17,13 @@ msgstr ""
 "Domain: plone.formwidget.multifile\n"
 
 #. Default: "unsaved"
-#: ./input.pt:23
+#: ./input.pt:27
 msgid "label_unsaved_file"
 msgstr "nicht gespeichert"
 
 #. Default: "remove"
 #: ./file_template.pt:25
-#: ./input.pt:27
+#: ./input.pt:31
 msgid "link_remove_file"
 msgstr "löschen"
 
