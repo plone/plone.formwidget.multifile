@@ -4,8 +4,14 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+Incompatibilities:
+
+- Instead of ``zope.app.file.interfaces.IFile`` use ``plone.namedfile.interfaces.IFile``.
+  [thet]
+
 - Fix missing Javascript call that breaks the widget
   [laulaz]
+
 - Add French and Dutch translations
   [laulaz]
 
