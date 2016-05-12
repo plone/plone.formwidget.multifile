@@ -1,6 +1,6 @@
-from zope.publisher.interfaces import NotFound
 from Products.CMFCore.utils import getToolByName
-from zope.app.file.interfaces import IFile
+from plone.namedfile.interfaces import IFile
+from zope.publisher.interfaces import NotFound
 
 
 def get_icon_for(context, file_):
