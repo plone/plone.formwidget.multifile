@@ -2,4 +2,10 @@ plone.formwidget.multifile.egg-info
 build
 dist
 *.mo
-*.pyc
+*.py[co]
+.*.cfg
+bin
+parts
+develop-eggs
+htmlcov
+.coverage

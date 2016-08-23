@@ -15,6 +15,11 @@ Incompatibilities:
 - Add French and Dutch translations
   [laulaz]
 
+- Add travis hook
+  [tomgross]
+
+- Plone 5.0 support
+  [tomgross]
 
 1.1 (2014-03-24)
 ----------------

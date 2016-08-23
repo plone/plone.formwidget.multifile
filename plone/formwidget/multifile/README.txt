@@ -86,8 +86,8 @@ names. We have to make sure ``MultiFileConverter.toFieldValue`` won't break in t
     >>> widget.context = MockContent()
     >>> widget.form.context = MockContent()
     >>> converter = MultiFileConverter(IMockContent['file'], widget)
-    >>> converter.toFieldValue([u'', u'filename1.txt', u'filename2.txt'])
-    []
+    >>> [f.data for f in converter.toFieldValue([u'', u'filename1.txt', u'filename2.txt'])]
+    ['filename1.txt', 'filename2.txt']
 
 AJAX form validation on object creation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
