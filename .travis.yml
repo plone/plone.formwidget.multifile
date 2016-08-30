@@ -13,9 +13,9 @@ before_install:
  - pip install --upgrade pip setuptools zc.buildout coverage==4.2
  - if [ $PLONE_VERSION == 5.0 ]; then pip install --upgrade setuptools==21.0.0; fi
 install:
- - sed -ie "s#test-4.3#test-$PLONE_VERSION#" buildout.cfg
- - buildout annotate
- - buildout
+ - sed -ie "s#test-5.0#test-$PLONE_VERSION#" buildout.cfg
+ - buildout annotate -c buildout.cfg
+ - buildout -c buildout.cfg
 script:
  - coverage run bin/test
 after_success:
