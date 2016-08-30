@@ -1,6 +1,10 @@
 Introduction
 ============
 
+.. image:: https://coveralls.io/repos/github/plone/plone.formwidget.multifile/badge.svg?branch=master
+   :target: https://coveralls.io/github/plone/plone.formwidget.multifile?branch=master
+
+
 `plone.formwidget.multifile` is a z3c.form-widget which lets users
 upload multiple files, either at once, or in batches using repeated form
 submissions.
