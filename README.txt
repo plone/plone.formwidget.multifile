@@ -1,8 +1,27 @@
 Introduction
 ============
 
-.. image:: https://coveralls.io/repos/github/plone/plone.formwidget.multifile/badge.svg?branch=master
-   :target: https://coveralls.io/github/plone/plone.formwidget.multifile?branch=master
+.. image:: https://secure.travis-ci.org/plone/plone.formwidget.multifile.svg?branch=master
+       :target: http://travis-ci.org/plone/plone.formwidget.multifile
+
+.. image:: https://coveralls.io/repos/plone/plone.formwidget.multifile/badge.svg?branch=master
+       :target: https://coveralls.io/r/plone/plone.formwidget.multifile
+
+.. image:: https://img.shields.io/pypi/dm/plone.formwidget.multifile.svg
+       :target: https://pypi.python.org/pypi/plone.formwidget.multifile/
+    :alt: Downloads
+
+.. image:: https://img.shields.io/pypi/v/plone.formwidget.multifile.svg
+       :target: https://pypi.python.org/pypi/plone.formwidget.multifile/
+    :alt: Latest Version
+
+.. image:: https://img.shields.io/pypi/status/plone.formwidget.multifile.svg
+       :target: https://pypi.python.org/pypi/plone.formwidget.multifile/
+    :alt: Egg Status
+
+.. image:: https://img.shields.io/pypi/l/plone.formwidget.multifile.svg
+       :target: https://pypi.python.org/pypi/plone.formwidget.multifile/
+    :alt: License
 
 
 `plone.formwidget.multifile` is a z3c.form-widget which lets users
