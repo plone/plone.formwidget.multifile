@@ -5,13 +5,12 @@ version = '1.2.dev0'
 
 tests_require = [
     'zope.app.testing',
-    'lxml',
     ]
 
 setup(name='plone.formwidget.multifile',
       version=version,
       description="z3c.form widget for adding multiple files",
-      long_description=open("README.txt").read() + "\n" + \
+      long_description=open("README.rst").read() + "\n" + \
           open(os.path.join("docs", "HISTORY.txt")).read(),
       classifiers=[
         "Development Status :: 5 - Production/Stable",
