@@ -11,7 +11,6 @@ env:
     - PLONE_VERSION=5.0
 #    - PLONE_VERSION=5.1
 before_install:
- - virtualenv .
  - bin/pip install --upgrade pip setuptools zc.buildout coverage==4.2
  - if [ $PLONE_VERSION == 5.0 ]; then pip install --upgrade setuptools==21.0.0; fi
 install:
