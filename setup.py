@@ -5,21 +5,27 @@ version = '1.2.dev0'
 
 tests_require = [
     'zope.app.testing',
-    'lxml',
     ]
 
 setup(name='plone.formwidget.multifile',
       version=version,
       description="z3c.form widget for adding multiple files",
-      long_description=open("README.txt").read() + "\n" + \
+      long_description=open("README.rst").read() + "\n" + \
           open(os.path.join("docs", "HISTORY.txt")).read(),
       classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Web Environment",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
+        "Framework :: Plone",
+        "Framework :: Plone :: 4.3",
+        "Framework :: Plone :: 5.0",
+        "Framework :: Plone :: 5.1",
         ],
       keywords='',
       author='Jonas Baumann',
       author_email='j.baumann@4teamwork.ch',
-      url='http://github.com/plone/plone.formwidget.multifile',
+      url='https://github.com/plone/plone.formwidget.multifile',
       license='GPL',
       packages=find_packages(exclude=['ez_setup']),
       namespace_packages=['plone', 'plone.formwidget'],
@@ -31,6 +37,7 @@ setup(name='plone.formwidget.multifile',
         'plone.z3cform',
         'plone.namedfile',
         'plone.formwidget.namedfile',
+        'Products.CMFPlone',
         # -*- Extra requirements: -*-
         ],
       tests_require=tests_require,
