@@ -4,21 +4,20 @@ sudo: false
 cache:
   directories:
   - eggs
-  - parts/node
 env:
   matrix:
     - PLONE_VERSION=4.3
     - PLONE_VERSION=5.0
 #    - PLONE_VERSION=5.1
 before_install:
- - bin/pip install --upgrade pip setuptools zc.buildout coverage==4.2
+ - pip install --upgrade pip setuptools zc.buildout coverage==4.2
  - if [ $PLONE_VERSION == 5.0 ]; then pip install --upgrade setuptools==21.0.0; fi
 install:
  - sed -ie "s#test-4.3#test-$PLONE_VERSION#" buildout.cfg
- - bin/buildout annotate
- - bin/buildout
+ - buildout annotate
+ - buildout
 script:
  - coverage run bin/test
 after_success:
- - bin/pip install -q coveralls python-coveralls
+ - pip install -q coveralls python-coveralls
  - coveralls
