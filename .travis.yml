@@ -10,14 +10,14 @@ env:
     - PLONE_VERSION=5.0
 #    - PLONE_VERSION=5.1
 before_install:
- - pip install --upgrade pip setuptools zc.buildout coverage==4.2
+ - pip install --upgrade pip setuptools zc.buildout
  - if [ $PLONE_VERSION == 5.0 ]; then pip install --upgrade setuptools==21.0.0; fi
 install:
  - sed -ie "s#test-5.0#test-$PLONE_VERSION#" buildout.cfg
  - buildout annotate -c buildout.cfg
  - buildout -c buildout.cfg
 script:
- - coverage run bin/test
+ - bin/coverage run bin/test
 after_success:
  - pip install -q coveralls python-coveralls
  - coveralls
