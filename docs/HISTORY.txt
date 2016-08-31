@@ -15,7 +15,7 @@ Incompatibilities:
 - Add French and Dutch translations
   [laulaz]
 
-- Add travis hook
+- Add travis & coveralls hook
   [tomgross]
 
 - Plone 5.0 support
