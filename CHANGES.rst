@@ -26,33 +26,44 @@ Incompatibilities:
 
 - Added Spanish (es) and Basque (eu) translation
   [erral]
+
 - Added PO file generation script
   [erral]
+
 - Use similar pattern to plone.formwidget.namedfile for the data converter.
   [gaudenz]
+
 - Add @@download BrowserView for file downloads
   [gaudenz]
+
 - Base widget on z3c.form.widget.Widget instead of MultiWidget. The MultiWidget
   is for combining different widgets into one.
   [gaudenz]
+
 - Don't call update from render. This is not necessary and can lead to unwanted
   side-effects.
   [gaudenz]
+
 - Extract FileUpload objects instead of relying on Widget.extract to do the mostly
   right thing.
   [gaudenz]
+
 - Base files shown by the widget on the actual fields content instead of a mixture
   of request data and converter magic.
   [gaudenz]
+
 - Improve input template and JavaScript
+
   - Append file inputs below the file list to not overwrite existing files
   - Remove Hacks for IE7. They no longer work with recent jQuery versions and
     IE7 is mostly irrelevant by now.
   - Use standard file input widget instead of custom add link. This is what people
     expect and as a bonus is already translated. If people want custom links they can
     still override the template.
+
   - Integrate not yet uploaded files into the same file list.
-  [gaudenz]
+    [gaudenz]
+
 - Add german translation
   [gaudenz]
 
