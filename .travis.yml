@@ -19,5 +19,4 @@ install:
 script:
  - bin/coverage run bin/test
 after_success:
- - pip install -q coveralls python-coveralls==2.5.0
- - coveralls
+ - bin/coveralls
