@@ -1,4 +1,4 @@
 recursive-include plone *
-recursive-include docs *
-include *
+include *.rst setup.py buildout.cfg
 global-exclude *.pyc
+exclude .coveragerc
