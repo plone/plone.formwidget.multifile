@@ -4,7 +4,8 @@ Changelog
 2.1 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Python 3 compatibility
+  [agitator]
 
 
 2.0 (2016-08-31)
