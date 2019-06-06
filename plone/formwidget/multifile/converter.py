@@ -6,6 +6,7 @@ from z3c.form.interfaces import IDataManager
 from zope.component import queryMultiAdapter, adapts
 from zope.schema.interfaces import ISequence
 from ZPublisher.HTTPRequest import FileUpload
+import six
 
 
 class MultiFileConverter(BaseDataConverter):
@@ -68,7 +69,7 @@ class MultiFileConverter(BaseDataConverter):
             return missing_value
         elif INamed.providedBy(value):
             return value
-        elif isinstance(value, basestring) and value.startswith('index:'):
+        elif isinstance(value, six.string_types) and value.startswith('index:'):
             # we already have the file
             index = int(value.split(':')[1])
             try:
@@ -80,7 +81,7 @@ class MultiFileConverter(BaseDataConverter):
 
             headers = value.headers
             filename = safe_basename(value.filename)
-            if filename is not None and not isinstance(filename, unicode):
+            if filename is not None and not isinstance(filename, six.text_type):
                 # Work-around for
                 # https://bugs.launchpad.net/zope2/+bug/499696
                 filename = filename.decode('utf-8')
