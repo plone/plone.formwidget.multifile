@@ -5,15 +5,15 @@ from z3c.form.interfaces import IFieldWidget, IDataManager, NO_VALUE
 from z3c.form.widget import FieldWidget, Widget
 from zope.browserpage.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getMultiAdapter, queryMultiAdapter
-from zope.interface import implements, implementer
+from zope.interface import implementer
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.utils import get_icon_for
 
 
+@implementer(IMultiFileWidget)
 class MultiFileWidget(Widget):
-    implements(IMultiFileWidget)
 
     klass = u'multi-file-widget'
 
@@ -96,10 +96,9 @@ def MultiFileFieldWidget(field, request):
     return FieldWidget(field, MultiFileWidget(request))
 
 
+@implementer(IPublishTraverse)
 class Download(BrowserView):
     """Download a file via ++widget++widget_name/@@download/filename"""
-
-    implements(IPublishTraverse)
 
     def __init__(self, context, request):
         super(BrowserView, self).__init__(context, request)
