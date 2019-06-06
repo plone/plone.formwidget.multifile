@@ -36,17 +36,11 @@ class MultiFileWidget(Widget):
         If the widget is in input mode then removal is allowed too.
         """
         dm = queryMultiAdapter((self.context, self.field), IDataManager)
-
-        # We check if the context implements the interface containing the field.
-        # There are situations when this is not true, e.g when creating an
-        # object an AJAX form validation is triggered.
-        # In this case the context is the container.
-        # If we do not check this then dm.query() may throw an exception.
         field_value = (
-            dm.query()
-            if ((dm is not None) and self.field.interface.providedBy(self.context))
-            else None
+            dm.query() if (dm is not None) else None
         )
+            
+
 
         if field_value:
             for i, value in enumerate(field_value):

@@ -34,17 +34,11 @@ class MultiFileConverter(BaseDataConverter):
 
         context = self.widget.context
         dm = queryMultiAdapter((context, self.field), IDataManager)
-
-        # We check if the context implements the interface containing the field.
-        # There are situations when this is not true, e.g when creating an
-        # object an AJAX form validation is triggered.
-        # In this case the context is the container.
-        # If we do not check this then dm.query() may throw an exception.
         current_field_value = (
-            dm.query()
-            if ((dm is not None) and self.field.interface.providedBy(context))
-            else None
+            dm.query() if (dm is not None) else None
         )
+
+
 
         if value is current_field_value:
             return value
