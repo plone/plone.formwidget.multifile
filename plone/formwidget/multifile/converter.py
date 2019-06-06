@@ -3,9 +3,11 @@ from plone.namedfile.interfaces import INamed
 from plone.namedfile.utils import safe_basename
 from z3c.form.converter import BaseDataConverter
 from z3c.form.interfaces import IDataManager
-from zope.component import queryMultiAdapter, adapts
+from zope.component import adapts
+from zope.component import queryMultiAdapter
 from zope.schema.interfaces import ISequence
 from ZPublisher.HTTPRequest import FileUpload
+
 import six
 
 
