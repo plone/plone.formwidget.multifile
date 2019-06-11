@@ -4,6 +4,7 @@ from plone.formwidget.multifile.utils import get_icon_for
 from plone.namedfile.utils import set_headers
 from plone.namedfile.utils import stream_data
 from Products.Five.browser import BrowserView
+from z3c.form.interfaces import IAddForm
 from z3c.form.interfaces import IDataManager
 from z3c.form.interfaces import IFieldWidget
 from z3c.form.interfaces import NO_VALUE
@@ -40,22 +41,25 @@ class MultiFileWidget(Widget):
         stored on the context and allowing to download it.
         If the widget is in input mode then removal is allowed too.
         """
+        if IAddForm.providedBy(self.form):
+            return
+
         dm = queryMultiAdapter((self.context, self.field), IDataManager)
-        field_value = (
-            dm.query() if (dm is not None) else None
-        )
-            
+        if dm is None:
+            return
 
+        field_value = dm.query()
+        if not field_value:
+            return
 
-        if field_value:
-            for i, value in enumerate(field_value):
-                form_value = 'index:%s' % i
-                download_url = '%s/++widget++%s/@@download/%i' % (
-                    self.request.getURL(),
-                    self.name,
-                    i)
+        for i, value in enumerate(field_value):
+            form_value = 'index:%s' % i
+            download_url = '%s/++widget++%s/@@download/%i' % (
+                self.request.getURL(),
+                self.name,
+                i)
 
-                yield self.render_file(form_value, value, download_url)
+            yield self.render_file(form_value, value, download_url)
 
     def render_file(self, form_value, file_, download_url):
         """Renders the <li> for one file.

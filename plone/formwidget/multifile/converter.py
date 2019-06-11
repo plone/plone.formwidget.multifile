@@ -3,6 +3,7 @@ from plone.namedfile.interfaces import INamed
 from plone.namedfile.utils import safe_basename
 from z3c.form.converter import BaseDataConverter
 from z3c.form.interfaces import IDataManager
+from z3c.form.interfaces import IEditForm
 from zope.component import adapts
 from zope.component import queryMultiAdapter
 from zope.schema.interfaces import ISequence
@@ -32,19 +33,15 @@ class MultiFileConverter(BaseDataConverter):
             if not value:
                 return value
 
-        # Now we can be sure we have a non-empty list containing non-false
-        # values.
-
         context = self.widget.context
         dm = queryMultiAdapter((context, self.field), IDataManager)
-        current_field_value = (
-            dm.query() if (dm is not None) else None
-        )
+        if dm is None:
+            return
 
-
-
-        if value is current_field_value:
-            return value
+        if IEditForm.providedBy(self.widget.form):
+            current_field_value = dm.query()
+        else:
+            current_field_value = []
 
         collection_type = self.field._type
         files = (self._toFieldSubValue(i, current_field_value) for i in value)
