@@ -10,6 +10,7 @@ from z3c.form.interfaces import IFieldWidget
 from z3c.form.interfaces import NO_VALUE
 from z3c.form.widget import FieldWidget
 from z3c.form.widget import Widget
+from z3c.form.browser.widget import HTMLFormElement
 from zope.browserpage.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getMultiAdapter
 from zope.component import queryMultiAdapter
@@ -19,7 +20,7 @@ from zope.publisher.interfaces import NotFound
 
 
 @implementer(IMultiFileWidget)
-class MultiFileWidget(Widget):
+class MultiFileWidget(Widget, HTMLFormElement):
 
     klass = u'multi-file-widget'
 
