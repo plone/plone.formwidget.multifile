@@ -1,19 +1,26 @@
 from Acquisition import aq_inner
-from plone.namedfile.utils import set_headers, stream_data
-from Products.Five.browser import BrowserView
-from z3c.form.interfaces import IFieldWidget, IDataManager, NO_VALUE
-from z3c.form.widget import FieldWidget, Widget
-from zope.browserpage.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getMultiAdapter, queryMultiAdapter
-from zope.interface import implements, implementer
-from zope.publisher.interfaces import IPublishTraverse, NotFound
-
 from plone.formwidget.multifile.interfaces import IMultiFileWidget
 from plone.formwidget.multifile.utils import get_icon_for
+from plone.namedfile.utils import set_headers
+from plone.namedfile.utils import stream_data
+from Products.Five.browser import BrowserView
+from z3c.form.interfaces import IAddForm
+from z3c.form.interfaces import IDataManager
+from z3c.form.interfaces import IFieldWidget
+from z3c.form.interfaces import NO_VALUE
+from z3c.form.widget import FieldWidget
+from z3c.form.widget import Widget
+from z3c.form.browser.widget import HTMLFormElement
+from zope.browserpage.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getMultiAdapter
+from zope.component import queryMultiAdapter
+from zope.interface import implementer
+from zope.publisher.interfaces import IPublishTraverse
+from zope.publisher.interfaces import NotFound
 
 
-class MultiFileWidget(Widget):
-    implements(IMultiFileWidget)
+@implementer(IMultiFileWidget)
+class MultiFileWidget(Widget, HTMLFormElement):
 
     klass = u'multi-file-widget'
 
@@ -35,28 +42,25 @@ class MultiFileWidget(Widget):
         stored on the context and allowing to download it.
         If the widget is in input mode then removal is allowed too.
         """
+        if IAddForm.providedBy(self.form):
+            return
+
         dm = queryMultiAdapter((self.context, self.field), IDataManager)
+        if dm is None:
+            return
 
-        # We check if the context implements the interface containing the field.
-        # There are situations when this is not true, e.g when creating an
-        # object an AJAX form validation is triggered.
-        # In this case the context is the container.
-        # If we do not check this then dm.query() may throw an exception.
-        field_value = (
-            dm.query()
-            if ((dm is not None) and self.field.interface.providedBy(self.context))
-            else None
-        )
+        field_value = dm.query()
+        if not field_value:
+            return
 
-        if field_value:
-            for i, value in enumerate(field_value):
-                form_value = 'index:%s' % i
-                download_url = '%s/++widget++%s/@@download/%i' % (
-                    self.request.getURL(),
-                    self.name,
-                    i)
+        for i, value in enumerate(field_value):
+            form_value = 'index:%s' % i
+            download_url = '%s/++widget++%s/@@download/%i' % (
+                self.request.getURL(),
+                self.name,
+                i)
 
-                yield self.render_file(form_value, value, download_url)
+            yield self.render_file(form_value, value, download_url)
 
     def render_file(self, form_value, file_, download_url):
         """Renders the <li> for one file.
@@ -96,10 +100,9 @@ def MultiFileFieldWidget(field, request):
     return FieldWidget(field, MultiFileWidget(request))
 
 
+@implementer(IPublishTraverse)
 class Download(BrowserView):
     """Download a file via ++widget++widget_name/@@download/filename"""
-
-    implements(IPublishTraverse)
 
     def __init__(self, context, request):
         super(BrowserView, self).__init__(context, request)

@@ -1,5 +1,5 @@
-from Products.CMFCore.utils import getToolByName
 from plone.namedfile.interfaces import IFile
+from Products.CMFCore.utils import getToolByName
 from zope.publisher.interfaces import NotFound
 
 
